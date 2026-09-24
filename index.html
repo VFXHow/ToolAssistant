@@ -193,7 +193,7 @@
   body.dark .fixrow{ border-bottom-color:#2b3045; }
   .fixrow:last-child{border-bottom:0;}
   .fixrow .tag{flex:0 0 auto; display:inline-block; font-size:11px; padding:1px 7px; border-radius:999px; color:#fff; font-weight:600; margin-top:2px;}
-  .fixrow .tag.fmt{background:#2563eb;} .fixrow .tag.check{background:#f97316;} .fixrow .tag.ai{background:#7c3aed;}
+  .fixrow .tag.fmt{background:#2563eb;} .fixrow .tag.check{background:#f97316;} .fixrow .tag.ai{background:#7c3aed;} .fixrow .tag.warn{background:#dc2626;}
   .fixrow .fixtxt{flex:1; min-width:0; word-break:break-all;}
   .fixrow.clickable{cursor:pointer;}
   .fixrow.clickable:hover{background:#f3f6ff;}
@@ -529,7 +529,7 @@
         <span class="lbl">输出格式:</span>
         <label class="chip" id="chipPlain" title="输出去除所有标签与标记的干净文本,便于查看或复制到其他渠道"><span class="sw"></span>纯文本</label>
         <label class="chip on" id="chipColor" title="按产品重点色规则,自动为模块标题、日期公告行、引导词等着色"><span class="sw"></span>智能上色</label>
-        <label class="chip on" id="chipSpace" title="中文与数字/英文之间自动加半角空格,如:共10人 → 共 10 人"><span class="sw"></span>自动空格</label>
+        <label class="chip" id="chipIndent" title="正文段落首行缩进:经典版 7 空格 / 轻享版 4 空格;已在排版设置填了段首空格数则以其为准,原文已有段首空格的段落不重复加"><span class="sw"></span>段首空格</label>
         <span class="count" id="outCount" style="margin-left:auto;">0 字</span>
       </div>
       <div class="aiprogress" id="aiProgress" hidden>
@@ -651,20 +651,7 @@
       <input type="text" id="aiModel" placeholder="模型名,如 deepseek-flash / gpt-4o-mini / glm-4-flash">
       <input type="password" id="aiKey" placeholder="API Key(选择服务商后,只需填写此项;仅保存在本机浏览器中)">
     </div>
-    <div class="note">⚠ 润色时文案会发送到你填写的接口地址,接口需支持浏览器跨域(CORS)。API Key 仅保存在本机浏览器中。<br>该配置为 <b>Easy 全局共享</b>(工具坞 🤖 与排期助手读取的是同一份),在任一入口修改都会同步生效。</div>
-    <div class="opt stack">
-      <div class="row"><span style="font-size:12.5px;color:var(--sub);">📚 历史公告参考:语料统一在「参考库」管理(在线存档 / 关联本地文件 / 自定义语料)</span></div>
-      <div class="row"><button class="btn small" id="libBtn2">📚 打开参考库管理</button></div>
-    </div>
-    <div class="opt stack">
-      <div class="row"><span style="font-size:12.5px;color:var(--sub);">➕ 补充参考(可选,追加到内置参考之后)</span></div>
-      <textarea id="aiStyleRef" rows="4" placeholder="可粘贴最新公告或额外范文(≤4000 字);不填也可正常使用"></textarea>
-    </div>
-    <div class="opt">
-      <button class="btn small" id="aiStyleImportBtn">📂 导入追加参考</button>
-      <span class="desc" id="aiStyleInfo">已存 0 字 / 补充参考 ≤4000 字</span>
-      <input type="file" id="aiStyleFile" hidden accept=".txt,.md,.docx">
-    </div>
+    <div class="note">⚠ 润色时文案会发送到你填写的接口地址,接口需支持浏览器跨域(CORS)。API Key 仅保存在本机浏览器中。<br>历史公告参考语料请在外部「📚 参考库」中统一管理。</div>
     <div class="foot">
       <button class="btn" id="aiCancelBtn">取消</button>
       <button class="btn primary" id="aiSaveBtn">保存</button>
@@ -721,8 +708,7 @@
     </section>
     <section>
       <h4>📤 AI 发送策略</h4>
-      <label class="opt" style="padding:6px 0;"><input type="radio" name="styleMode" value="smart" style="accent-color:var(--primary);"> <b>智能精选(推荐)</b> — 自动挑选与当前公告最相关的几篇完整发送,兼顾效果与成本</label>
-      <label class="opt" style="padding:6px 0;"><input type="radio" name="styleMode" value="full" style="accent-color:var(--primary);"> <b>全文参考</b> — 每次完整发送参考库全部语料,最贴合历史文风,但更慢、token 消耗更多</label>
+      <div class="note">润色时自动挑选与当前公告最相关的 <b>2 篇</b>历史公告(合计不超过 <b>4000 字</b>)作为参考,兼顾文风贴合与 token 成本。</div>
     </section>
     <div class="foot">
       <button class="btn" id="libCloseBtn">关闭</button>
@@ -923,12 +909,6 @@ function unifyPunctuation(text){
   }
   return out;
 }
-function addCjkSpaces(text){
-  const UNITS = "年月日时分秒元角分个只件条次倍名位家服级";
-  return text
-    .replace(/([\u4e00-\u9fa5])([A-Za-z0-9])/g, (m, a, b) => (a === "第" || UNITS.includes(a) ? m : a + " " + b))
-    .replace(/([A-Za-z0-9])([\u4e00-\u9fa5])/g, (m, a, b) => (UNITS.includes(b) ? m : a + " " + b));
-}
 function cleanText(raw){
   return raw
     .replace(/\r\n?/g, "\n")
@@ -957,6 +937,37 @@ function dupIssues(line){
     const w = m[0];
     if (w.length === 2 && !isLegitDupWord(w)) out.push("疑似叠字错误:「" + w + "」");
     else if (w.length > 2 && !/^[哈嘿嘻呵呜呼啦咚哒啪砰嗡轰咻嗖叮铛]+$/.test(w)) out.push("疑似重复字:「" + w + "」");
+  }
+  return out;
+}
+/* ============ 时间逻辑检查(活动时间区间倒置 / 早于当前日期) ============ */
+function timeIssueFor(line){
+  const out = [];
+  const now = new Date();
+  const curMonth = now.getMonth() + 1, curDay = now.getDate();
+  const curVal = curMonth * 100 + curDay;
+  // 跨年区间(11~12月 → 1~2月)或年末预告年初(当前11~12月写 1~2月),均不误判"早于当前"
+  const isCrossYear = (sm, em) => (sm >= 11 && em <= 2) || (em <= 2 && curMonth >= 11);
+  // 日期区间:9月16日-9月30日 / 9月16日6:30-9月30日 / 9月3日维护后-9月30日
+  const reRange = /(\d{1,2})月(\d{1,2})日(?:\s*\d{1,2}:\d{2})?\s*[-—－~至]\s*(\d{1,2})月(\d{1,2})日/g;
+  let m;
+  while ((m = reRange.exec(line))){
+    const sm = +m[1], sd = +m[2], em = +m[3], ed = +m[4];
+    const sVal = sm * 100 + sd, eVal = em * 100 + ed;
+    if (!isCrossYear(sm, em) && sVal > eVal){
+      out.push("⚠ 时间区间倒置:开始 " + sm + "月" + sd + "日 晚于结束 " + em + "月" + ed + "日,请核对");
+    } else if (!isCrossYear(sm, em) && eVal < curVal){
+      out.push("⚠ 活动结束 " + em + "月" + ed + "日 早于当前日期,疑似已过期/日期有误,请确认");
+    }
+  }
+  // 单日期引导词行:活动时间:9月16日(早于当前则提示)
+  const reSingle = /(?:活动时间|上线时间|维护时间|开放时间|开启时间|售卖时间|兑换时间|报名时间|领取时间)[:：]\s*(\d{1,2})月(\d{1,2})日/g;
+  while ((m = reSingle.exec(line))){
+    const sm = +m[1], sd = +m[2];
+    const sVal = sm * 100 + sd;
+    if (!isCrossYear(sm, sm) && sVal < curVal){
+      out.push("⚠ 活动时间 " + sm + "月" + sd + "日 早于当前日期,疑似已过期/日期有误,请确认");
+    }
   }
   return out;
 }
@@ -1004,6 +1015,7 @@ function fixFormatting(text){
     }
     bracketIssues(line).forEach(s => report.push({ cat:"check", text:"行" + ln + "｜" + s }));
     dupIssues(line).forEach(s => report.push({ cat:"check", text:"行" + ln + "｜" + s }));
+    timeIssueFor(line).forEach(s => report.push({ cat:"warn", text:"行" + ln + "｜" + s }));
     return line;
   });
   return { text: out.join("\n"), report };
@@ -1060,6 +1072,7 @@ function buildBlocks(text){
   const blocks = [];
   let state = "start";
   for (const raw of lines){
+    const hadIndent = /^[\s　]+/.test(raw);   // 原文段首是否已有空格(半角/全角),避免段首空格重复叠加
     const t = raw.trim();
     if (!t){ blocks.push({ type:"blank", text:"" }); continue; }
     if (state === "start" && RE_GREET.test(t)){
@@ -1075,7 +1088,7 @@ function buildBlocks(text){
     }
     const nm = normModule(t);
     if (nm){ blocks.push({ type:"module", text:nm }); }
-    else blocks.push({ type: lineType(t), text:t });
+    else blocks.push({ type: lineType(t), text:t, hadIndent });
     if (state === "start") state = "body";
   }
   // 仅压缩连续空行,完全尊重原文分段
@@ -1146,31 +1159,43 @@ function renderRich(blocks, prod, noColor){
       continue;
     }
     if (b.type === "sep"){ out.push(b.text); continue; }
+    const seg = " ".repeat(paraIndent(prod, b));   // 段首空格(仅正文段落,列表/模块为空);加在 <Segment/> 之前,独立于颜色标签
     if (noColor){
       // 无颜色行不带 <N>,直接换行
-      out.push("<Segment/>" + b.text);
+      out.push(seg + "<Segment/>" + b.text);
       continue;
     }
     const c = lineColor(b.text, prod);
     if (c){
       // 颜色代码与 <N> 成对出现:<X>内容<N>
-      out.push("<Segment/><" + c + ">" + b.text + "<N>");
+      out.push(seg + "<Segment/><" + c + ">" + b.text + "<N>");
     } else {
       const e = applyEmph(b.text, prod);
-      if (e) out.push("<Segment/>" + e.pre + e.tail + "<N>");
-      else out.push("<Segment/>" + b.text);
+      if (e) out.push(seg + "<Segment/>" + e.pre + e.tail + "<N>");
+      else out.push(seg + "<Segment/>" + b.text);
     }
   }
   out.push("</text></item>");
   return out.join("\n");
 }
 
+/* 段首空格:正文段落首行缩进(经典 7 空格 / 轻享 4 空格)。
+   规则:仅 para 正文段落生效;开关关闭不缩进;原文已有段首空格不重复;排版设置已填段首空格数则以其为准(只生效一个)。 */
+function paraIndent(prod, b){
+  if (b.type !== "para") return 0;
+  if (!chips().indent) return 0;
+  if (b.hadIndent) return 0;
+  if (prod.indentSpaces > 0) return prod.indentSpaces;
+  return prod.key === "qx" ? 4 : 7;
+}
 function indentFor(b, prod){
   if (b.type === "greeting") return 0;
   if (b.type === "sep") return 0;
   const lv = detectLevel(b.text);
   if (lv > 0 && prod.key === "qx") return lv - 1;  // 轻享分级:一级0 二级1 三级2 四级3
   if (currentKind === "mail") return 4;
+  const pi = paraIndent(prod, b);
+  if (pi) return pi;
   return prod.indentSpaces;
 }
 
@@ -1427,10 +1452,6 @@ async function readUploadedFile(file){
   throw new Error("不支持的文件类型:" + file.name);
 }
 
-/* ============ AI 润色(可选,参考历史公告风格) ============ */
-function getStyleRef(){
-  try{ const s = localStorage.getItem("ggpa_style_ref"); return s || ""; }catch(e){ return ""; }
-}
 /* ============ 参考库:本地文件关联 + 自定义语料 ============ */
 function hasFSA(){ return typeof window.showOpenFilePicker === "function"; }
 function idbOpen(){
@@ -1529,10 +1550,6 @@ async function readOnlineCorpus(){
   }catch(e){}
   return null;
 }
-function getStyleMode(){
-  try{ const m = localStorage.getItem("ggpa_style_mode"); if (m === "full" || m === "smart") return m; }catch(e){}
-  return "smart";
-}
 function splitAnnouncements(doc){
   const out = [];
   const re = /^(\d{4})\s*更新公告\s*$/gm;
@@ -1572,8 +1589,16 @@ function selectRelevantDoc(doc, currentText, topN, maxChars){
   });
   const anyHit = scored.some(s => s.score > 0);
   if (!anyHit){
-    // 没有相关篇目时,取最近 3 篇(文档按时间顺序,末尾最新)
-    return anns.slice(-3).map(a => "【参考篇目:" + a.title + "】\n" + a.text).join("\n\n");
+    // 没有相关篇目时,取最近几篇(文档按时间顺序,末尾最新),同样遵守篇数与字数上限
+    const recent = anns.slice(-(topN || 3));
+    const picked = [];
+    let total = 0;
+    for (const a of recent){
+      picked.push(a);
+      total += a.text.length;
+      if (maxChars && total >= maxChars) break;
+    }
+    return picked.map(a => "【参考篇目:" + a.title + "】\n" + a.text).join("\n\n");
   }
   scored.sort((x, y) => y.score - x.score);
   const picked = [];
@@ -1603,15 +1628,9 @@ async function asyncStyleContext(prod, currentText){
   }
   if (!doc) doc = getCustomCorpus();
   if (doc.trim()){
-    if (getStyleMode() === "full"){
-      if (doc.length > 300000) doc = doc.slice(0, 300000) + "\n\n(参考语料超长,仅发送前 30 万字)";
-      parts.push("【历史公告全文】\n" + doc);
-    } else {
-      parts.push("【历史公告相关篇目(自动精选)】\n" + selectRelevantDoc(doc, currentText || "", 3, 14000));
-    }
+    // 智能精选:仅挑与当前公告最相关的 2 篇、合计不超过 4000 字,兼顾文风贴合与 token 成本
+    parts.push("【历史公告相关篇目(自动精选)】\n" + selectRelevantDoc(doc, currentText || "", 2, 4000));
   }
-  const extra = getStyleRef();
-  if (extra) parts.push("【补充参考】\n" + extra);
   return parts.join("\n\n");
 }
 /* 接口地址规范化:自动补全缺失的 /chat/completions,避免 404 */
@@ -1762,7 +1781,7 @@ function chips(){
   return {
     plain: $("chipPlain").classList.contains("on"),
     color: $("chipColor").classList.contains("on"),
-    space: $("chipSpace").classList.contains("on")
+    indent: $("chipIndent").classList.contains("on")
   };
 }
 async function optimize(){
@@ -1799,8 +1818,7 @@ async function optimize(){
         r.line = out >= 0 ? out + 1 : 0;
       }
     });
-    let basis = text;               // 未加空格的干净文本
-    if (c.space) text = addCjkSpaces(text);
+    let basis = text;               // 干净文本(段首空格在渲染阶段按段落类型处理)
     const blocks = buildBlocks(text);
     const plainOut = renderPlain(blocks, prod);
 
@@ -1849,7 +1867,6 @@ function rerender(){
   const c = chips();
   let text = lastBasis;
   weeklyMode = currentTpl === "week" || /例行维护/.test(text);   // 周更公告颜色规范
-  if (c.space) text = addCjkSpaces(text);
   const blocks = buildBlocks(text);
   let out;
   if (currentKind === "mail" || c.plain){
@@ -1978,7 +1995,7 @@ function bindChip(id){
 function persistChips(){
   try{ localStorage.setItem("ggpa_chips_v2", JSON.stringify(chips())); }catch(e){}
 }
-["chipPlain","chipColor","chipSpace"].forEach(bindChip);
+["chipPlain","chipColor","chipIndent"].forEach(bindChip);
 
 $("optBtn").addEventListener("click", optimize);
 $("clearBtn").addEventListener("click", () => {
@@ -2028,7 +2045,6 @@ $("docxBtn").addEventListener("click", () => {
   if (!v.trim()){ toast("请先点击「一键优化」"); return; }
   const prod = getProduct();
   let text = unifyPunctuation(cleanText(stripMarkup(v)));
-  if (chips().space) text = addCjkSpaces(text);
   const blocks = buildBlocks(text);
   const blob = buildDocx(blocks, prod);
   download(blob, fileName("docx"));
@@ -2282,9 +2298,6 @@ $("aiSettingsBtn").addEventListener("click", () => {
   const cfg = getAICfg();
   $("aiKey").value = cfg.key || "";
   fillAIProviderSelect(cfg);
-  $("aiStyleRef").value = getStyleRef();
-  updateStyleInfo();
-  document.querySelectorAll('input[name="styleMode"]').forEach(r => { r.checked = (r.value === getStyleMode()); });
   $("aiMask").classList.add("show");
 });
 $("aiCancelBtn").addEventListener("click", () => $("aiMask").classList.remove("show"));
@@ -2298,13 +2311,9 @@ $("aiSaveBtn").addEventListener("click", () => {
   cfg.model = $("aiModel").value.trim();
   cfg.key = $("aiKey").value.trim();
   try{ localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg)); }catch(e){}
-  const ref = $("aiStyleRef").value.trim();
-  try{ localStorage.setItem("ggpa_style_ref", ref.slice(0, 4000)); }catch(e){}
-  const modeEl = document.querySelector('input[name="styleMode"]:checked');
-  try{ localStorage.setItem("ggpa_style_mode", modeEl ? modeEl.value : "smart"); }catch(e){}
   updateAIPolishBtn();
   $("aiMask").classList.remove("show");
-  toast("AI 配置已保存" + (normEp !== rawEp ? "(接口地址已自动补全为 " + normEp + ")" : "") + (ref ? "(含 " + ref.length + " 字风格样本)" : ""));
+  toast("AI 配置已保存" + (normEp !== rawEp ? "(接口地址已自动补全为 " + normEp + ")" : ""));
 });
 
 /* 示例 */
@@ -2437,10 +2446,10 @@ function renderFixBar(){
   bar.innerHTML = '<div class="fixpanel-head"><span>🔍 排版与内容检查:' + fixEntries.length + " 处" + (aiN ? "(含 AI " + aiN + " 处)" : "") + '</span><span class="fixarrow">' + (open ? "▾ 收起" : "▸ 展开") + "</span></div>" +
     (open
       ? '<div class="fixpanel-body">' + shown.map(x => {
-          const tag = x.cat === "ai" ? "AI" : x.cat === "check" ? "检测" : "修正";
+          const tag = x.cat === "ai" ? "AI" : x.cat === "warn" ? "⚠ 提醒" : x.cat === "check" ? "检测" : "修正";
           const m = /行(\d+)/.exec(x.text);
           const ln = (typeof x.line === "number" && x.line > 0) ? x.line : (m ? +m[1] : 0);
-          return '<div class="fixrow' + (ln ? " clickable" : "") + '"' + (ln ? ' data-line="' + ln + '"' : "") + '><span class="tag ' + (x.cat === "ai" ? "ai" : x.cat === "check" ? "check" : "fmt") + '">' + tag + '</span><span class="fixtxt">' + esc(x.text) + "</span></div>";
+          return '<div class="fixrow' + (ln ? " clickable" : "") + '"' + (ln ? ' data-line="' + ln + '"' : "") + '><span class="tag ' + (x.cat === "ai" ? "ai" : x.cat === "warn" ? "warn" : x.cat === "check" ? "check" : "fmt") + '">' + tag + '</span><span class="fixtxt">' + esc(x.text) + "</span></div>";
         }).join("") + (fixEntries.length > 100 ? '<div class="fixrow"><span class="fixtxt">…其余 ' + (fixEntries.length - 100) + " 处已省略</span></div>" : "") + "</div>"
       : "");
   const h = bar.querySelector(".fixpanel-head");
@@ -3018,44 +3027,6 @@ $("recList").addEventListener("click", e => {
   }
 });
 
-/* ============ 历史公告风格样本导入 ============ */
-function updateStyleInfo(){
-  const n = $("aiStyleRef").value.length;
-  $("aiStyleInfo").textContent = "已存 " + n + " 字 / 补充参考上限 4000 字(与参考库语料互不影响)";
-}
-function extractSamples(text, count, eachMax){
-  const cleaned = text.replace(/\r\n?/g, "\n");
-  let arr = [];
-  const re = /^(\d{4})\s*更新公告\s*$/gm;
-  let m, last = -1;
-  while ((m = re.exec(cleaned))){
-    if (last >= 0) arr.push(cleaned.slice(last, m.index).trim());
-    last = m.index;
-  }
-  if (last >= 0) arr.push(cleaned.slice(last).trim());
-  if (!arr.length) arr = [cleaned];
-  let out = arr.slice(0, count).map(s => "【历史公告样本】\n" + s.slice(0, eachMax)).join("\n\n");
-  if (out.length > 4000) out = out.slice(0, 4000);
-  return out;
-}
-$("aiStyleRef").addEventListener("input", updateStyleInfo);
-$("aiStyleImportBtn").addEventListener("click", () => $("aiStyleFile").click());
-$("aiStyleFile").addEventListener("change", async () => {
-  const f = $("aiStyleFile").files && $("aiStyleFile").files[0];
-  $("aiStyleFile").value = "";
-  if (!f) return;
-  try{
-    const text = await readUploadedFile(f);
-    const samples = extractSamples(text, 3, 1200);
-    $("aiStyleRef").value = samples;
-    updateStyleInfo();
-    toast("已提取 " + samples.length + " 字补充参考,点击「保存」后生效");
-  }catch(err){
-    console.error(err);
-    toast("导入失败:" + err.message);
-  }
-});
-
 /* ============ 参考库弹层交互 ============ */
 let linkedFileInfo = null;
 let libFileHintShown = false;
@@ -3102,7 +3073,6 @@ $("libOnlineReReadBtn").addEventListener("click", () => refreshOnlineInfo(false)
 function openLibModal(){
   $("libCustom").value = getCustomCorpus();
   $("libMask").classList.add("show");
-  document.querySelectorAll('input[name="styleMode"]').forEach(r => { r.checked = (r.value === getStyleMode()); });
   refreshLinkedFileInfo(true);
   refreshOnlineInfo(true);
   if (location.protocol === "file:" && hasFSA() && !libFileHintShown){
@@ -3111,7 +3081,6 @@ function openLibModal(){
   }
 }
 $("libBtn").addEventListener("click", openLibModal);
-$("libBtn2").addEventListener("click", openLibModal);
 $("libCloseBtn").addEventListener("click", () => $("libMask").classList.remove("show"));
 $("libMask").addEventListener("click", e => { if (e.target === $("libMask")) $("libMask").classList.remove("show"); });
 $("libLinkBtn").addEventListener("click", async () => {
@@ -3186,8 +3155,6 @@ $("libClearBtn").addEventListener("click", () => {
 $("libSaveBtn").addEventListener("click", () => {
   const t = $("libCustom").value;
   try{ localStorage.setItem("ggpa_custom_corpus", t); }catch(e){ toast("保存失败:浏览器存储不可用"); return; }
-  const modeEl = document.querySelector('input[name="styleMode"]:checked');
-  try{ localStorage.setItem("ggpa_style_mode", modeEl ? modeEl.value : "smart"); }catch(e){}
   $("libMask").classList.remove("show");
   toast(t.trim() ? "自定义语料已保存(" + countChars(t) + " 字)" : "已清空自定义语料");
 });
@@ -3300,8 +3267,8 @@ function updatePlaceholder(){
     $("aiSettingsBtn").style.display = "none";
   }
   $("chipPlain").classList.toggle("on", !!c.plain);
-  $("chipColor").classList.toggle("on", c.color === true);   // 默认均关闭,勾选即开启
-  $("chipSpace").classList.toggle("on", c.space === true);
+  $("chipColor").classList.toggle("on", c.color !== false);   // 智能上色默认开启,仅当用户明确关闭时才关闭
+  $("chipIndent").classList.toggle("on", !!c.indent);   // 段首空格默认关闭
   $("chipAI").classList.toggle("on", !!getAICfg().enabled);
   updateAIPolishBtn();
   if (loadRecords()){
