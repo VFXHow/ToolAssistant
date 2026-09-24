@@ -1,0 +1,3318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公告助手</title>
+<style>
+  :root{
+    --bg:#eef1f6; --card:#ffffff; --line:#e3e7ef; --text:#23283a; --sub:#8a90a5;
+    --primary:#5b52e8; --primary2:#4338ca; --accent:#7c5cf0;
+    --radius:14px; --shadow:0 6px 24px rgba(35,50,100,.08);
+    --grad:linear-gradient(135deg,#5b52e8,#7c5cf0);
+  }
+  body[data-product="qx"]{
+    --primary:#0f9d58; --primary2:#0b8047; --accent:#f97316;
+    --grad:linear-gradient(135deg,#16a34a,#f97316);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(160deg,#e8edf7 0%,#f4f6fb 40%,#eef1f6 100%);
+    color:var(--text); min-height:100vh; padding:26px 20px 46px;
+  }
+  body[data-product="qx"]{ background:linear-gradient(160deg,#e7f3ec 0%,#f6f9f6 40%,#eef4f0 100%); }
+  .wrap{max-width:1180px; margin:0 auto;}
+
+  /* 顶部 */
+  header{display:flex; align-items:center; gap:14px; margin-bottom:18px;}
+  .logo{
+    width:46px;height:46px;border-radius:13px;flex:0 0 auto;
+    background:var(--grad); color:#fff;font-size:21px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px rgba(91,82,232,.35); transition:.3s;
+  }
+  header h1{font-size:21px; letter-spacing:.5px;}
+  header p{color:var(--sub); font-size:12.5px; margin-top:3px;}
+  .steps{display:flex; gap:8px; margin-left:auto; flex-wrap:wrap;}
+  .step{
+    background:var(--card); border:1px solid var(--line); border-radius:999px;
+    padding:6px 14px; font-size:12.5px; color:var(--sub); white-space:nowrap;
+  }
+  .step b{color:var(--primary); margin-right:4px;}
+
+  /* 工具条 */
+  .toolbar{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:13px 18px; margin-bottom:16px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .seg{display:flex; background:#eef1f8; border-radius:10px; padding:3px; gap:2px;}
+  body[data-product="qx"] .seg{background:#e9f3ee;}
+  .seg button{
+    border:0; background:transparent; padding:7px 16px; border-radius:8px;
+    font-size:13.5px; color:var(--sub); cursor:pointer; font-family:inherit; transition:.15s;
+  }
+  .seg button.on{background:#fff; color:var(--primary); font-weight:600; box-shadow:0 2px 8px rgba(35,50,100,.12);}
+  .seg button:hover:not(.on){color:var(--text);}
+  .vline{width:1px; height:22px; background:var(--line);}
+
+  /* 开关 chips */
+  .chip{
+    display:flex; align-items:center; gap:8px; padding:7px 13px;
+    border:1px solid var(--line); border-radius:999px; cursor:pointer;
+    font-size:13px; background:#fff; user-select:none; transition:.15s; color:var(--sub);
+  }
+  .chip:hover{border-color:#c9d2e6;}
+  .chip .sw{width:30px;height:17px;border-radius:999px;background:#d7dce8;position:relative;transition:.2s;flex:0 0 auto;}
+  .chip .sw::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .chip.on{color:var(--text); border-color:var(--primary);}
+  .chip.on .sw{background:var(--primary);}
+  .chip.on .sw::after{left:15px;}
+  .chip.disabled{opacity:.45; cursor:not-allowed;}
+  .toolbar .right{margin-left:auto; display:flex; gap:10px; align-items:center;}
+
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--text); border-radius:9px;
+    padding:8px 15px; font-size:13.5px; cursor:pointer; font-family:inherit; transition:.15s;
+  }
+  .btn:hover{border-color:#c9d2e6; background:#f7f9fd;}
+  .btn.primary{
+    background:var(--grad); color:#fff; border:0;
+    font-size:15px; font-weight:600; padding:10px 26px;
+    box-shadow:0 4px 14px rgba(91,82,232,.3);
+  }
+  .btn.primary:hover{filter:brightness(1.06);}
+  .btn.primary:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.55; cursor:not-allowed;}
+  .btn.small{padding:6px 12px; font-size:12.5px;}
+
+  /* 颜色图例 popover */
+  .legend-wrap{position:relative;}
+  .legend{
+    position:absolute; top:calc(100% + 10px); right:0; z-index:40;
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 16px 44px rgba(20,26,45,.18); padding:14px 16px; width:250px; display:none;
+  }
+  .legend.show{display:block;}
+  .legend h4{font-size:13px; margin-bottom:10px; color:var(--text);}
+  .legend .lrow{display:flex; align-items:center; gap:9px; padding:4px 0; font-size:12.5px; color:var(--sub);}
+  .legend .swatch{width:22px;height:14px;border-radius:4px;flex:0 0 auto;border:1px solid rgba(0,0,0,.08);}
+  .legend .swatch.none{background:#fff;border:1px dashed #c6cede;}
+  .legend .tag{font-weight:700; color:var(--text); width:22px;}
+
+  /* 双栏 */
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr;} }
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); display:flex; flex-direction:column; min-height:520px; overflow:hidden;
+  }
+  .panel-head{
+    padding:13px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+  }
+  .panel-head .dot{width:9px;height:9px;border-radius:50%;}
+  .dot.in{background:var(--primary);} .dot.out{background:#16a34a;}
+  .panel-head h2{font-size:15px;}
+  .panel-head .hint{color:var(--sub); font-size:12px; margin-left:auto;}
+
+  /* 标题输入行 */
+  .title-row{display:flex; align-items:center; gap:10px; margin:12px 18px 0;}
+  .title-row label{font-size:12.5px; color:var(--sub); white-space:nowrap;}
+  .title-row input{
+    flex:1; border:1px solid var(--line); border-radius:9px; padding:8px 12px;
+    font-size:13.5px; font-family:inherit; outline:none; background:#fbfcfe; transition:.15s;
+  }
+  .title-row input:focus{border-color:var(--primary); background:#fff;}
+  .badge{
+    font-size:12px; padding:3px 10px; border-radius:999px; background:#eef1f8;
+    color:var(--sub); white-space:nowrap;
+  }
+  .badge.warn{background:#fef2f2; color:#dc2626; font-weight:700;}
+
+  .drop{
+    margin:12px 18px 0; border:1.5px dashed #c6cede; border-radius:10px;
+    padding:12px; text-align:center; color:var(--sub); font-size:12.5px;
+    cursor:pointer; transition:.15s; background:#fafbfe;
+  }
+  .drop:hover,.drop.over{border-color:var(--primary); color:var(--primary); background:#f3f6ff;}
+  .drop b{color:var(--primary);}
+
+  textarea{
+    flex:1; margin:12px 18px; padding:13px 15px; border:1px solid var(--line);
+    border-radius:10px; resize:none; font-family:inherit; font-size:14px; line-height:1.9;
+    color:var(--text); outline:none; background:#fbfcfe; min-height:280px;
+  }
+  textarea:focus{border-color:var(--primary); background:#fff;}
+  textarea[readonly]{background:#f7f9fc;}
+  #output{font-family:"Cascadia Mono","Consolas","Microsoft YaHei",monospace; font-size:13px; line-height:1.8;}
+
+  .panel-foot{
+    padding:11px 18px; border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+  }
+  .outbar{
+    display:flex; align-items:center; gap:8px; padding:9px 18px;
+    border-bottom:1px solid var(--line); background:#fbfcfe; flex-wrap:wrap;
+  }
+  .outbar .lbl{font-size:12px; color:var(--sub);}
+
+  /* 模板勾选条(输入面板顶部) */
+  .tplbar{
+    display:flex; align-items:center; gap:8px; padding:9px 18px;
+    border-bottom:1px solid var(--line); background:linear-gradient(90deg,#f6f4ff,#fbfcfe); flex-wrap:wrap;
+  }
+  body[data-product="qx"] .tplbar{ background:linear-gradient(90deg,#eff9f2,#fbfcfe); }
+  body.dark .tplbar{ background:linear-gradient(90deg,#1d2133,#171b29); }
+  .tplbar .lbl{font-size:12px; color:var(--sub);}
+
+  /* 敏感词警告条 */
+  .warnbar{
+    padding:9px 18px; border-bottom:1px solid #fde2e2; background:#fef2f2;
+    color:#b91c1c; font-size:12.5px; line-height:1.7;
+  }
+  body.dark .warnbar{ background:#3a1d1d; color:#fca5a5; border-color:#5b2b2b; }
+
+  /* 排版与内容检查面板(对比坞下方,全宽纵向列出) */
+  .fixpanel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+  }
+  .fixpanel-head{
+    padding:10px 16px; cursor:pointer; font-weight:700; font-size:13px;
+    display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line);
+    background:linear-gradient(90deg,#f0f6ff,#fbfcfe);
+  }
+  body.dark .fixpanel-head{ background:#1d2133; }
+  .fixpanel-head:hover{ background:#e6effc; }
+  body.dark .fixpanel-head:hover{ background:#24304d; }
+  .fixarrow{margin-left:auto; color:var(--sub); font-size:12px;}
+  .fixpanel-body{padding:10px 16px; max-height:320px; overflow:auto;}
+  .fixrow{display:flex; align-items:flex-start; gap:8px; padding:5px 0; border-bottom:1px dashed #eef1f6; font-size:12.5px; line-height:1.7; color:var(--text);}
+  body.dark .fixrow{ border-bottom-color:#2b3045; }
+  .fixrow:last-child{border-bottom:0;}
+  .fixrow .tag{flex:0 0 auto; display:inline-block; font-size:11px; padding:1px 7px; border-radius:999px; color:#fff; font-weight:600; margin-top:2px;}
+  .fixrow .tag.fmt{background:#2563eb;} .fixrow .tag.check{background:#f97316;} .fixrow .tag.ai{background:#7c3aed;}
+  .fixrow .fixtxt{flex:1; min-width:0; word-break:break-all;}
+  .fixrow.clickable{cursor:pointer;}
+  .fixrow.clickable:hover{background:#f3f6ff;}
+  body.dark .fixrow.clickable:hover{ background:#232b45; }
+
+  /* AI 深度润色对比弹层 */
+  .modal.wide{width:min(920px,100%);}
+  .diff-cols{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:760px){ .diff-cols{grid-template-columns:1fr;} }
+  .diff-cols h4{font-size:12.5px; margin-bottom:6px; color:var(--sub);}
+  .diff-cols textarea{width:100%; height:330px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-family:inherit; font-size:13px; line-height:1.8; resize:vertical; background:#fbfcfe; outline:none; color:var(--text);}
+  .diff-cols textarea:focus{border-color:var(--primary);}
+  body.dark .diff-cols textarea{ background:#141828; color:#e8eaf3; border-color:#2b3045; }
+  #diffIssues{border:1px solid #fde2e2; background:#fef2f2; border-radius:10px; padding:9px 12px; margin-bottom:12px; font-size:12.5px; line-height:1.8; color:#b91c1c; max-height:170px; overflow:auto;}
+  #diffIssues:empty{display:none;}
+  body.dark #diffIssues{ background:#3a1d1d; border-color:#5b2b2b; color:#fca5a5; }
+  .opt textarea{width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:13px; resize:vertical; background:#fbfcfe; color:var(--text); outline:none;}
+  body.dark .opt textarea{ background:#141828; color:#e8eaf3; border-color:#2b3045; }
+
+  /* AI 润色进度条 */
+  .aiprogress{padding:10px 18px; border-bottom:1px solid var(--line); background:#fbfcfe;}
+  body.dark .aiprogress{ background:#171b29; }
+  .ai-bar{height:8px; border-radius:999px; background:#e4e9f4; overflow:hidden; position:relative;}
+  body.dark .ai-bar{ background:#2b3045; }
+  .ai-bar-fill{position:absolute; top:0; height:100%; width:36%; border-radius:999px; background:var(--grad); animation:aibar 1.2s ease-in-out infinite;}
+  @keyframes aibar{ 0%{ left:-36%; } 100%{ left:100%; } }
+  .ai-status{font-size:12.5px; color:var(--sub); margin-top:7px;}
+  .ai-preview{margin-top:6px; font-size:12px; color:var(--text); background:#f0f6ff; border:1px dashed #c9d6f0; border-radius:8px; padding:6px 10px; max-height:76px; overflow:hidden; line-height:1.7; white-space:pre-wrap; word-break:break-all;}
+  body.dark .ai-preview{ background:#1c2740; border-color:#2c3a5e; }
+
+  /* 排版检查报告条:可点击行 */
+  /* 对比弹层右侧行标注窗 */
+  .diff-row{display:flex; gap:10px; align-items:stretch;}
+  .diff-row textarea{flex:1;}
+  .diff-gutter{width:216px; flex:0 0 216px; height:330px; overflow:auto; border:1px dashed #c6cede; border-radius:10px; background:#fbfcfe; position:relative;}
+  .diff-gutter::-webkit-scrollbar{display:none;}
+  body.dark .diff-gutter{ background:#141828; border-color:#333a52; }
+  .diff-gutter .ginner{position:relative; min-height:100%;}
+  .gmark{position:absolute; left:4px; right:4px; min-height:21px; font-size:11px; line-height:1.55; background:#fef2f2; color:#b91c1c; border:1px solid #fde2e2; border-radius:6px; padding:3px 7px; cursor:pointer; box-sizing:border-box; word-break:break-all;}
+  .gmark:hover{background:#fde8e8; border-color:#f5c6c6; z-index:3;}
+  .gmark.active{background:#fee2e2; border:1.5px solid #ef4444; z-index:4;}
+  body.dark .gmark{ background:#3a1d1d; color:#fca5a5; border-color:#5b2b2b; }
+  body.dark .gmark:hover, body.dark .gmark.active{ background:#4a2525; border-color:#ef4444; }
+
+  /* AI 润色对比坞(嵌入页面,非弹窗) */
+  .dock{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+  }
+  .dock-head{
+    display:flex; align-items:center; gap:10px; padding:11px 16px;
+    border-bottom:1px solid var(--line); flex-wrap:wrap;
+    background:linear-gradient(90deg,#f6f4ff,#fbfcfe);
+  }
+  body[data-product="qx"] .dock-head{ background:linear-gradient(90deg,#eff9f2,#fbfcfe); }
+  body.dark .dock-head{ background:#1d2133; }
+  .dock-title{font-size:14px; font-weight:700;}
+  .dock-info{font-size:12px; color:var(--sub); margin-right:auto;}
+  .dock-cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 200px;}
+  @media (max-width:1000px){ .dock-cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 150px;} }
+  @media (max-width:640px){ .dock-cols{grid-template-columns:1fr;} }
+  .dock-col{min-width:0; border-right:1px solid var(--line);}
+  .dock-col:last-child{border-right:0;}
+  .dock-col-head{padding:7px 14px; font-size:12px; color:var(--sub); border-bottom:1px solid var(--line); background:#fbfcfe;}
+  body.dark .dock-col-head{ background:#171b29; }
+  .dock-scroll{flex:1; height:380px; overflow:auto; font-family:"Cascadia Mono","Consolas","Microsoft YaHei",monospace; font-size:13px; background:#fff;}
+  body.dark .dock-scroll{ background:#141828; }
+  .dock-gutter{height:380px; overflow:hidden; position:relative; background:#fbfcfe; border-left:1px solid var(--line);}
+  .dock-gutter .ginner{position:relative; min-height:100%;}
+  body.dark .dock-gutter{ background:#141828; }
+  .drow{min-height:23.4px; line-height:1.6; padding:3px 12px; white-space:normal; word-break:break-all; overflow:hidden; font-size:13px; color:var(--text); box-sizing:border-box; display:flex; align-items:flex-start;}
+  .drow .ln{flex:0 0 auto; min-width:2.4em; margin-right:8px; text-align:right; color:var(--sub); font-size:11px; line-height:1.7; user-select:none;}
+  .drow .dt{flex:1; min-width:0; word-break:break-all;}
+  .drow.eqgap{color:var(--sub); background:#f6f8fc; border-top:1px dashed var(--line); border-bottom:1px dashed var(--line); cursor:pointer; font-size:12px; display:block; padding:2px 12px;}
+  body.dark .drow.eqgap{ background:#1b2134; }
+  .dock.filtered .drow.eq{display:none;}
+  .drow.hover{outline:2px dashed var(--primary); outline-offset:-2px;}
+  .drow.eq{color:var(--text);}
+  .drow.del{background:#fef2f2; color:#b91c1c; text-decoration:line-through;}
+  .drow.add{background:#f0fdf4; color:#0b8047;}
+  .drow.chg{display:flex; align-items:flex-start; gap:8px; background:#fff7ed; border-top:1px dashed #fed7aa; border-bottom:1px dashed #fed7aa; box-sizing:border-box;}
+  .drow.chg .dt{color:#b91c1c; text-decoration:line-through;}
+  body.dark .drow.chg{ background:#2e2417; border-color:#5b4020; }
+  body.dark .drow.chg .dt{ color:#fca5a5; }
+  .gmark.empty{background:#f6f8fc; border-color:var(--line); color:var(--sub);}
+  body.dark .gmark.empty{ background:#1b2134; }
+  /* 第三栏:接受修改卡片(勾选框 + 两版对比说明) */
+  .gcheck{position:absolute; left:4px; right:4px; background:#fff; border:1px solid #f5c6c6; border-radius:8px; padding:6px 8px; font-size:11px; line-height:1.6; color:var(--text); box-shadow:0 2px 6px rgba(35,50,100,.08); cursor:pointer;}
+  .gcheck .ghead{display:flex; align-items:center; gap:6px;}
+  .gcheck .gchk{display:flex; align-items:center; gap:6px; font-weight:700; color:#9a3412; cursor:pointer; font-size:12px;}
+  .gcheck .gchk input{accent-color:var(--primary);}
+  .gcheck .gloc{color:var(--sub); cursor:pointer; font-size:12px; padding:0 2px; margin-left:auto;}
+  .gcheck .gloc:hover{color:var(--primary);}
+  .gcheck .gdiff{word-break:break-all;}
+  .gcheck .gdiff b{color:#b91c1c; font-weight:700;}
+  .gcheck .gissue{color:#b91c1c; border-top:1px dashed #f5c6c6; margin-top:3px; padding-top:3px; word-break:break-all;}
+  body.dark .gcheck{ background:#1b1f2e; border-color:#5b2b2b; }
+  body.dark .gcheck .gissue{ color:#fca5a5; }
+  body.dark .gmark.edit:hover{ background:#24335a; }
+
+  /* AI 修改记录列表 */
+  .ritem{display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; font-size:12.5px; flex-wrap:wrap;}
+  .ritem .rtime{color:var(--sub); font-size:12px; white-space:nowrap;}
+  .ritem .rstat{padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .ritem .rstat.applied{background:#f0fdf4; color:#16a34a;}
+  .ritem .rstat.reverted{background:#fef2f2; color:#dc2626;}
+  .ritem .rstat.pending{background:#fff7ed; color:#ea580c;}
+  .ritem .rprev{flex:1; min-width:120px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ritem .rbtns{display:flex; gap:6px;}
+  .drow.off{opacity:.35;}
+  .drow.active{outline:2px solid var(--primary); outline-offset:-2px;}
+  body.dark .drow.del{ background:#3a1d1d; color:#fca5a5; }
+  body.dark .drow.add{ background:#17301f; color:#7ee2a8; }
+  body.dark .drow.chg{ background:#2e2417; border-color:#5b4020; }
+
+  /* 历史记录列表 */
+  .hitem{
+    position:relative; padding:10px 12px; border:1px solid var(--line);
+    border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.15s;
+  }
+  .hitem:hover{border-color:var(--primary); background:#f7f9fd;}
+  body.dark .hitem:hover{background:#262b3f;}
+  .hmeta{display:flex; gap:6px; align-items:center; margin-bottom:5px;}
+  .hbadge{font-size:11px; padding:2px 8px; border-radius:999px; background:#eef1f8; color:var(--primary);}
+  .hbadge.kind{background:#f0fdf4; color:#16a34a;}
+  .htime{font-size:11px; color:var(--sub); margin-left:auto;}
+  .hprev{font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:28px;}
+  .hdel{
+    position:absolute; top:8px; right:8px; border:0; background:transparent;
+    color:var(--sub); cursor:pointer; font-size:13px; padding:2px 6px; border-radius:6px;
+  }
+  .hdel:hover{color:#dc2626; background:#fef2f2;}
+  body.dark .hdel:hover{background:#3a1d1d;}
+  .modal textarea{outline:none;}
+  .panel-foot .count{color:var(--sub); font-size:12px; margin-left:auto;}
+  .panel-foot .group{display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+  .panel-foot .group + .group{margin-left:8px; padding-left:8px; border-left:1px solid var(--line);}
+
+  /* 弹层 */
+  .mask{
+    position:fixed; inset:0; background:rgba(20,26,45,.45); z-index:50;
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .mask.show{display:flex;}
+  .modal{
+    background:#fff; border-radius:16px; width:min(560px,100%); max-height:88vh;
+    overflow:auto; padding:22px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal h3{font-size:16px; margin-bottom:6px;}
+  .modal .sub{font-size:12px; color:var(--sub); margin-bottom:14px;}
+  .modal section{ margin-bottom:18px; }
+  .modal section > h4{
+    font-size:13.5px; margin-bottom:10px; padding-bottom:7px; border-bottom:1px solid #f0f2f7;
+    display:flex; align-items:center; gap:8px;
+  }
+  .opt{display:flex; align-items:center; gap:10px; padding:8px 0; font-size:13.5px;}
+  .opt .desc{color:var(--sub); font-size:12px; margin-left:auto; text-align:right; max-width:48%;}
+  .opt input[type=text],.opt input[type=password],.opt input[type=number]{
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px;
+    font-size:13px; font-family:inherit; outline:none; background:#fbfcfe;
+  }
+  .opt input[readonly]{background:#eef1f6; color:var(--sub); cursor:default;}
+  body.dark .opt input[readonly]{ background:#1a1f31; color:#8b93ad; }
+  .opt input:focus{border-color:var(--primary); background:#fff;}
+  .opt.stack{flex-direction:column; align-items:stretch;}
+  .opt.stack .row{display:flex; align-items:center; gap:10px;}
+
+  /* 色块选择器 */
+  .colorpick{display:flex; gap:6px; align-items:center;}
+  .colorpick .swatch{
+    width:34px; height:24px; border-radius:7px; cursor:pointer; border:2px solid transparent;
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;
+    transition:.15s; opacity:.55;
+  }
+  .colorpick .swatch.sel{opacity:1; border-color:var(--text); transform:scale(1.06);}
+  .colorpick .swatch.none{background:#fff; border:1px dashed #c6cede; color:var(--sub); opacity:.8;}
+  .colorpick .swatch.none.sel{border-color:var(--text);}
+  .modal .foot{display:flex; gap:10px; justify-content:flex-end; margin-top:6px;}
+  .modal .note{font-size:12px; color:var(--sub); background:#f6f8fc; border-radius:8px; padding:9px 12px; margin-top:10px; line-height:1.7;}
+
+  #toast{
+    position:fixed; left:50%; bottom:42px; transform:translateX(-50%) translateY(20px);
+    background:#23283a; color:#fff; padding:10px 22px; border-radius:999px; font-size:13.5px;
+    opacity:0; pointer-events:none; transition:.25s; z-index:99;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* 深色模式 */
+  body.dark{ --bg:#101320; --card:#1b1f2e; --line:#2b3045; --text:#e8eaf3; --sub:#8b93ad; --shadow:0 6px 24px rgba(0,0,0,.35); }
+  body.dark{ background:linear-gradient(160deg,#141827 0%,#12151f 40%,#101320 100%); }
+  body.dark .seg{ background:#141828; }
+  body.dark .seg button.on{ background:#262b3f; color:#9db8ff; }
+  body.dark[data-product="qx"] .seg button.on{ color:#7ee2a8; }
+  body.dark .chip{ background:#1b1f2e; border-color:#2b3045; }
+  body.dark .chip.on{ color:var(--text); }
+  body.dark .chip .sw{ background:#3a4157; }
+  body.dark .btn{ background:#1b1f2e; border-color:#2b3045; color:var(--text); }
+  body.dark .btn:hover{ background:#262b3f; }
+  body.dark textarea{ background:#141828; color:#e8eaf3; border-color:#2b3045; }
+  body.dark textarea:focus{ background:#1a1f31; }
+  body.dark .drop{ background:#171b29; border-color:#333a52; }
+  body.dark .outbar{ background:#171b29; }
+  body.dark .step{ background:#1b1f2e; border-color:#2b3045; }
+  body.dark .legend, body.dark .modal{ background:#1b1f2e; }
+  body.dark .modal input, body.dark .opt input[type=text],
+  body.dark .opt input[type=password], body.dark .opt input[type=number],
+  body.dark .title-row input{ background:#141828; color:#e8eaf3; border-color:#2b3045; }
+  body.dark .modal section > h4{ border-color:#2b3045; }
+  body.dark .note{ background:#141828; }
+  body.dark .badge{ background:#262b3f; }
+  body.dark .colorpick .swatch.none{ background:#141828; border-color:#3a4157; }
+  body.dark .opt input[type=checkbox]{ accent-color:var(--primary); }
+  body.dark select{ background:#141828; color:#e8eaf3; border-color:#2b3045; }
+  body.dark #toast{ background:#0d0f18; }
+
+  footer{text-align:center; color:#9aa1b8; font-size:12px; margin-top:26px; line-height:1.8;}
+
+  /* ============ 移动端适配(手机/远程办公) ============ */
+  @media (max-width:640px){
+    body{ padding:12px 10px 30px; }
+    .wrap{ max-width:100%; }
+    header{ flex-wrap:wrap; gap:8px; }
+    .logo{ width:40px; height:40px; font-size:18px; border-radius:11px; }
+    header h1{ font-size:18px; }
+    header p{ font-size:11.5px; }
+    .steps{ margin-left:0; width:100%; gap:6px; }
+    .step{ padding:5px 10px; font-size:11.5px; }
+    .toolbar{ padding:10px 12px; gap:8px; }
+    .seg{ width:100%; }
+    .seg button{ flex:1; padding:8px 6px; font-size:13px; }
+    .toolbar .right{ margin-left:0; width:100%; justify-content:flex-start; }
+    .vline{ display:none; }
+    .cols{ gap:12px; }
+    .panel{ min-height:0; }
+    .tplbar{ padding:8px 12px; }
+    .title-row{ margin:10px 12px 0; }
+    .drop{ margin:10px 12px 0; padding:14px 10px; }
+    .aiprogress{ padding:8px 12px; }
+    textarea{ min-height:170px; }
+    .panel-foot{ gap:8px; }
+    .panel-foot .btn{ padding:8px 12px; }
+    .dock-head{ padding:9px 10px; gap:8px; }
+    .dock-head .btn{ padding:7px 10px; }
+    .dock-cols{ grid-template-columns:1fr; }
+    .dock-col{ border-right:0; border-bottom:1px solid var(--line); }
+    .dock-col:last-child{ border-bottom:0; }
+    .dock-scroll{ height:250px; }
+    .dock-gutter{ height:auto; border-left:0; border-top:1px solid var(--line); overflow:visible; }
+    .dock-gutter .ginner{ height:auto !important; min-height:0; }
+    .dock-gutter .gcheck, .dock-gutter .gmark{ position:static !important; margin:4px 6px; }
+    .fixpanel-body{ max-height:230px; }
+    .modal{ padding:16px 14px; }
+    /* 16px 字号避免 iOS 聚焦输入框时页面自动放大 */
+    input, select, textarea{ font-size:16px !important; }
+  }
+</style>
+</head>
+<body data-product="zx">
+<div class="wrap">
+
+  <header>
+    <div class="logo">公</div>
+    <div>
+      <h1>公告助手</h1>
+      <p>粘贴 / 上传文案 → 一键按产品规范排版,支持颜色标签、纯文本与 Word 下载</p>
+    </div>
+    <div class="steps">
+      <span class="step"><b>1</b>选产品·粘贴或上传</span>
+      <span class="step"><b>2</b>点击优化</span>
+      <span class="step"><b>3</b>复制 / 下载</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg" id="prodSeg">
+      <button data-product="zx" class="on">梦幻新诛仙</button>
+      <button data-product="qx">梦幻新诛仙:轻享</button>
+    </div>
+    <div class="vline"></div>
+    <div class="seg" id="kindSeg">
+      <button data-kind="announcement" class="on">公告</button>
+      <button data-kind="mail">邮件</button>
+    </div>
+    <div class="right">
+      <button class="btn small" id="historyBtn">🕘 历史</button>
+      <button class="btn small" id="darkBtn">🌙 深色</button>
+      <div class="legend-wrap">
+        <button class="btn small" id="legendBtn">🎨 颜色图例</button>
+        <div class="legend" id="legendBox"></div>
+      </div>
+      <button class="btn small" id="libBtn" title="管理 AI 参考语料:关联本地文件(每次润色实时读取)或维护自定义语料">📚 参考库</button>
+      <button class="btn small" id="settingsBtn">⚙ 排版设置</button>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- 输入面板 -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="dot in"></span><h2>原始内容</h2>
+        <span class="hint">支持 .txt / .md / .csv / .docx / .xlsx,可直接粘贴带标签的旧公告</span>
+      </div>
+      <div class="tplbar">
+        <span class="lbl">模板补全:</span>
+        <label class="chip" data-tplchip="day"><span class="sw"></span>日更公告</label>
+        <label class="chip" data-tplchip="week"><span class="sw"></span>周更公告</label>
+        <label class="chip" data-tplchip="mailFix"><span class="sw"></span>补偿·功能异常</label>
+        <label class="chip" data-tplchip="mailAct"><span class="sw"></span>补偿·活动异常</label>
+      </div>
+      <div class="drop" id="dropZone">
+        点击选择或拖拽文件到此处 <b>上传 Word / Excel / 文本</b><br>图片与跳转链接无需处理,粘贴带 &lt;link&gt; 的旧公告会自动剥离
+        <input type="file" id="fileInput" hidden accept=".txt,.md,.csv,.docx,.xlsx">
+      </div>
+      <textarea id="input" placeholder="在此粘贴公告正文…"></textarea>
+      <div class="panel-foot">
+        <button class="btn primary" id="optBtn">✨ 一键优化</button>
+        <label class="chip" id="chipAI" title="开启后:一键优化在规则排版后调用 AI 润色措辞(参考历史公告风格,需先配置接口)"><span class="sw"></span>AI润色</label>
+        <button class="btn small" id="aiSettingsBtn" title="AI 接口配置">⚙</button>
+        <button class="btn small" id="sampleBtn">填入示例</button>
+        <button class="btn small" id="clearBtn">清空</button>
+        <span class="count" id="inCount">0 字</span>
+      </div>
+    </section>
+
+    <!-- 输出面板 -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="dot out"></span><h2>优化结果</h2>
+        <span class="hint" id="outHint">等待处理</span>
+      </div>
+      <div class="warnbar" id="warnBar" hidden></div>
+      <div class="outbar">
+        <span class="lbl">输出格式:</span>
+        <label class="chip" id="chipPlain" title="输出去除所有标签与标记的干净文本,便于查看或复制到其他渠道"><span class="sw"></span>纯文本</label>
+        <label class="chip on" id="chipColor" title="按产品重点色规则,自动为模块标题、日期公告行、引导词等着色"><span class="sw"></span>智能上色</label>
+        <label class="chip on" id="chipSpace" title="中文与数字/英文之间自动加半角空格,如:共10人 → 共 10 人"><span class="sw"></span>自动空格</label>
+        <span class="count" id="outCount" style="margin-left:auto;">0 字</span>
+      </div>
+      <div class="aiprogress" id="aiProgress" hidden>
+        <div class="ai-bar"><div class="ai-bar-fill"></div></div>
+        <div class="ai-status" id="aiStatus">✨ AI 正在润色中…</div>
+        <div class="ai-preview" id="aiPreview" hidden></div>
+      </div>
+      <textarea id="output" placeholder="优化后的内容将显示在这里,可直接点击编辑调整…"></textarea>
+      <div class="panel-foot">
+        <button class="btn small" id="aiPolishBtn" title="配置 AI 后,参考历史公告风格对输出内容做深度润色与内容检查" disabled>✨ AI 深度润色</button>
+        <button class="btn small" id="recBtn" title="查看每次 AI 润色的修改记录,可随时打开对比或撤回修改" disabled>🧾 AI 修改记录</button>
+        <button class="btn small" id="copyBtn">📋 复制</button>
+        <button class="btn small" id="txtBtn">⬇ 下载 TXT</button>
+        <button class="btn small" id="docxBtn">⬇ 下载 Word</button>
+        <button class="btn small" id="clearOutBtn">🗑 清空</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- AI 润色对比坞(嵌入页面,非弹窗) -->
+  <div class="dock" id="diffDock" hidden>
+    <div class="dock-head">
+      <span class="dock-title">🔀 AI 润色对比</span>
+      <span class="dock-info" id="dockInfo">0 处修改</span>
+      <button class="btn small" id="dockAllBtn">☑ 全选</button>
+      <button class="btn small" id="dockNoneBtn">☐ 全不选</button>
+      <button class="btn small" id="dockFilterBtn" title="隐藏未修改的行,只显示有改动的位置">👁 只看修改</button>
+      <button class="btn primary small" id="dockApplyBtn">✓ 应用已勾选修改</button>
+      <button class="btn small" id="dockUndoBtn" title="撤销上一次已应用的 AI 修改">↩ 撤销</button>
+      <button class="btn small" id="dockCloseBtn" title="收起对比区,可随时通过输出面板的「🧾 AI 修改记录」重新打开">✕ 收起</button>
+    </div>
+    <div class="dock-cols">
+      <div class="dock-col">
+        <div class="dock-col-head">原文(橙色高亮+删除线=将被替换的内容,勾选在右侧卡片)</div>
+        <div class="dock-scroll" id="dockLeft"></div>
+      </div>
+      <div class="dock-col">
+        <div class="dock-col-head">AI 优化后(绿色=新增/修改的内容)</div>
+        <div class="dock-scroll" id="dockRight"></div>
+      </div>
+      <div class="dock-col dock-gutter-col">
+        <div class="dock-col-head">接受修改 · 两版对比说明(点击卡片定位到行)</div>
+        <div class="dock-gutter" id="diffGutter"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 排版与内容检查(全宽面板,纵向完整列出,位于对比坞下方) -->
+  <div class="fixpanel" id="fixBar" hidden></div>
+
+  <footer>
+    本工具为单文件网页,双击即可使用;排版、上色与「排版检查(序号/标点/日期/叠字)」均在本机完成,「AI 润色 / AI 深度润色」需在 ⚙ 中配置 AI 接口;历史公告参考语料在「📚 参考库」中管理(可关联本地文件实时读取,可选智能精选/全文两种模式)。<br>
+    颜色标签说明:&lt;S&gt; 深蓝 · &lt;B&gt; 蓝色 · &lt;G&gt; 绿色 · &lt;O&gt; 橙色 · &lt;R&gt; 红色,&lt;N&gt; 为换行,&lt;Segment/&gt; 为段首标记;两产品标签规则不同,可在「排版设置」中调整。
+  </footer>
+</div>
+
+<!-- 设置弹层 -->
+<div class="mask" id="mask">
+  <div class="modal">
+    <h3>排版设置</h3>
+    <div class="sub" id="settingsSub">当前产品:梦幻新诛仙(经典版)—— 修改仅对当前产品生效</div>
+
+    <section>
+      <h4>🎨 重点色规则(当前产品)</h4>
+      <div class="opt"><span style="width:110px;">模块标题色</span><span class="desc">【新增内容】等模块行</span></div>
+      <div class="opt"><div class="colorpick" data-cfg="colorModule"></div></div>
+      <div class="opt"><span style="width:110px;">日期公告行</span><span class="desc">如“9月11日补充公告内容”</span></div>
+      <div class="opt"><div class="colorpick" data-cfg="colorDate"></div></div>
+      <div class="opt"><span style="width:110px;">条目标题色</span><span class="desc">如“1. 全新「设计站」上线…”</span></div>
+      <div class="opt"><div class="colorpick" data-cfg="colorItemHead"></div></div>
+      <div class="opt"><span style="width:110px;">引导词色</span><span class="desc">活动时间 / 活动规则 / 参与方式等</span></div>
+      <div class="opt"><div class="colorpick" data-cfg="colorGuide"></div></div>
+      <div class="opt"><span style="width:110px;">强调色</span><span class="desc">关键词行内高亮(慎用)</span></div>
+      <div class="opt"><div class="colorpick" data-cfg="colorEmph"></div></div>
+      <div class="opt stack">
+        <div class="row"><span style="font-size:12.5px;color:var(--sub);">强调关键词(逗号分隔,如:神兽,限定</span></div>
+        <input type="text" id="cfgEmphWords" placeholder="神兽">
+      </div>
+    </section>
+
+    <section>
+      <h4>📐 排版规则(当前产品)</h4>
+      <div class="opt">纯文本段首空格数<input type="number" id="cfgIndent" min="0" max="20" style="width:70px;"><span class="desc">默认 0(保持原文排版),需要时按规范调整</span></div>
+      <div class="opt">称呼用语<input type="text" id="cfgGreeting" style="flex:1;"><span class="desc">公告正文开头的称呼行</span></div>
+      <div class="opt">段间保留空行<input type="checkbox" id="cfgBlank" checked style="width:16px;height:16px;accent-color:var(--primary);"><span class="desc">优化后保留原文空行</span></div>
+    </section>
+
+    <section>
+      <h4>🚫 敏感词检查</h4>
+      <div class="opt stack">
+        <div class="row"><span style="font-size:12.5px;color:var(--sub);">敏感词表(每行一个;留空保存则恢复默认词表)</span></div>
+        <textarea id="cfgSensitive" rows="5" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+      </div>
+    </section>
+
+    <div class="foot">
+      <button class="btn small" id="resetBtn">恢复当前产品默认</button>
+      <button class="btn" id="cancelBtn">取消</button>
+      <button class="btn primary" id="saveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI 润色配置弹层 -->
+<div class="mask" id="aiMask">
+  <div class="modal">
+    <h3>AI 润色配置</h3>
+    <div class="sub">开启「AI润色」勾选后,一键优化将先按规则排版,再调用大模型润色措辞;未开启时完全离线</div>
+    <div class="opt stack">
+      <div class="row"><span style="font-size:12.5px;color:var(--sub);">🤖 AI 服务商(选择后自动填好接口地址与模型,只需填写 API Key)</span></div>
+      <select id="aiProvider" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px;background:#fbfcfe;color:var(--text);outline:none;"></select>
+    </div>
+    <div class="opt stack">
+      <div class="row"><span style="font-size:12.5px;color:var(--sub);">接口地址(选「自定义」时可修改)</span></div>
+      <input type="text" id="aiEndpoint" placeholder="https://api.deepseek.com/chat/completions">
+    </div>
+    <div class="opt stack">
+      <div class="row"><span style="font-size:12.5px;color:var(--sub);">模型(选「自定义」时可修改)/ API Key</span></div>
+      <input type="text" id="aiModel" placeholder="模型名,如 deepseek-flash / gpt-4o-mini / glm-4-flash">
+      <input type="password" id="aiKey" placeholder="API Key(选择服务商后,只需填写此项;仅保存在本机浏览器中)">
+    </div>
+    <div class="note">⚠ 润色时文案会发送到你填写的接口地址,接口需支持浏览器跨域(CORS)。API Key 仅保存在本机浏览器中。<br>该配置为 <b>Easy 全局共享</b>(工具坞 🤖 与排期助手读取的是同一份),在任一入口修改都会同步生效。</div>
+    <div class="opt stack">
+      <div class="row"><span style="font-size:12.5px;color:var(--sub);">📚 历史公告参考:语料统一在「参考库」管理(在线存档 / 关联本地文件 / 自定义语料)</span></div>
+      <div class="row"><button class="btn small" id="libBtn2">📚 打开参考库管理</button></div>
+    </div>
+    <div class="opt stack">
+      <div class="row"><span style="font-size:12.5px;color:var(--sub);">➕ 补充参考(可选,追加到内置参考之后)</span></div>
+      <textarea id="aiStyleRef" rows="4" placeholder="可粘贴最新公告或额外范文(≤4000 字);不填也可正常使用"></textarea>
+    </div>
+    <div class="opt">
+      <button class="btn small" id="aiStyleImportBtn">📂 导入追加参考</button>
+      <span class="desc" id="aiStyleInfo">已存 0 字 / 补充参考 ≤4000 字</span>
+      <input type="file" id="aiStyleFile" hidden accept=".txt,.md,.docx">
+    </div>
+    <div class="foot">
+      <button class="btn" id="aiCancelBtn">取消</button>
+      <button class="btn primary" id="aiSaveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 历史记录弹层 -->
+<div class="mask" id="historyMask">
+  <div class="modal">
+    <h3>历史记录(最近 10 条)</h3>
+    <div class="sub">每次优化成功自动保存;点击条目恢复,点击 ✕ 删除单条</div>
+    <div id="historyList"></div>
+    <div class="foot">
+      <button class="btn small" id="historyClearBtn">清空全部</button>
+      <button class="btn" id="historyCloseBtn">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 参考库管理弹层 -->
+<div class="mask" id="libMask">
+  <div class="modal wide">
+    <h3>📚 历史公告参考库</h3>
+    <div class="sub">当前生效:内置风格要点(未配置语料)。优先级:本地关联文件 &gt; 自定义语料 &gt; 内置风格要点;每次润色自动读取最新内容</div>
+    <section>
+      <h4>🌐 方式零:在线存档(管理员上传,全员自动共用,含手机端)</h4>
+      <div class="opt">
+        <button class="btn small" id="libOnlineReReadBtn">重新读取</button>
+        <span class="desc" id="libOnlineInfo">未读取</span>
+      </div>
+      <div class="note">管理员把历史公告导出为 txt、命名为「历史公告参考.txt」与工具同目录一起上传后,所有成员打开工具即自动使用,无需本地导入。更新公告:管理员重新导出并覆盖上传该 txt 即可,成员刷新页面生效。</div>
+    </section>
+    <section>
+      <h4>📎 方式一:关联本地文件(支持 .txt / .md / .docx,仅桌面 Chrome/Edge)</h4>
+      <div class="opt">
+        <button class="btn" id="libLinkBtn">🔗 选择并关联文件</button>
+        <button class="btn small" id="libUnlinkBtn">取消关联</button>
+        <button class="btn small" id="libReReadBtn" title="授权失效时点此一键重新授权并实时读取,无需重新选文件">重新授权·重读</button>
+        <span class="desc" id="libFileInfo">未关联</span>
+      </div>
+      <div class="note">关联一次后,工具会同时保存浏览器授权与内容缓存:每次润色优先实时读取该文件的最新内容;<b>即使关闭页面后授权失效,也会自动使用上次关联时的内容缓存,不影响使用</b>;点「重新授权·重读」一键恢复实时读取,或重新「选择并关联文件」。以后要新增/修改历史公告,直接编辑那个本地文件即可。需要 Chrome / Edge 浏览器。</div>
+    </section>
+    <section>
+      <h4>📝 方式二:自定义语料(保存在浏览器,可随时查看修改)</h4>
+      <textarea id="libCustom" rows="12" placeholder="可粘贴历史公告全文,或点击下方导入;留空表示不使用自定义语料" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical;background:#fbfcfe;color:var(--text);"></textarea>
+      <div class="opt">
+        <button class="btn small" id="libImportBtn">📂 导入 docx/txt 替换</button>
+        <button class="btn small" id="libExportBtn">⬇ 导出当前语料为 txt</button>
+        <button class="btn small" id="libClearBtn">🗑 清空</button>
+        <span class="count" id="libCount">0 字</span>
+        <input type="file" id="libImportFile" hidden accept=".txt,.md,.docx">
+      </div>
+    </section>
+    <section>
+      <h4>📤 AI 发送策略</h4>
+      <label class="opt" style="padding:6px 0;"><input type="radio" name="styleMode" value="smart" style="accent-color:var(--primary);"> <b>智能精选(推荐)</b> — 自动挑选与当前公告最相关的几篇完整发送,兼顾效果与成本</label>
+      <label class="opt" style="padding:6px 0;"><input type="radio" name="styleMode" value="full" style="accent-color:var(--primary);"> <b>全文参考</b> — 每次完整发送参考库全部语料,最贴合历史文风,但更慢、token 消耗更多</label>
+    </section>
+    <div class="foot">
+      <button class="btn" id="libCloseBtn">关闭</button>
+      <button class="btn primary" id="libSaveBtn">保存语料</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI 修改记录弹层 -->
+<div class="mask" id="recMask">
+  <div class="modal wide">
+    <h3>🧾 AI 修改记录</h3>
+    <div class="sub">记录每次 AI 润色的对比;可随时打开查看对比,或撤回最近一次的修改</div>
+    <div id="recList"></div>
+    <div class="foot">
+      <button class="btn small" id="recClearBtn">清空记录</button>
+      <button class="btn" id="recCloseBtn">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 确认弹层 -->
+<div class="mask" id="confirmMask">
+  <div class="modal">
+    <h3>⚠ 提示</h3>
+    <div class="sub" id="confirmMsg"></div>
+    <div class="foot">
+      <button class="btn" id="confirmCancelBtn">取消</button>
+      <button class="btn" id="confirmAltBtn" hidden>去配置参考库</button>
+      <button class="btn primary" id="confirmOKBtn">继续润色</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ═══════════════ 后台配置区(部署上线时由管理员在此维护,修改后重新上传覆盖即可) ═══════════════ */
+const SHARED_AI = {
+  enabled: true,               // 为全体成员启用共享 AI 配置(团队成员无需自己配置)
+  provider: "deepseek",        // deepseek / deepseekpro / openai / zhipu / qwen / moonshot / siliconflow / custom
+  endpoint: "",                // 留空=自动取 provider 预设;custom 时必填
+  model: "",                   // 留空=自动取 provider 预设;custom 时必填
+  key: "",                     // 团队共享 API Key(注意:GitHub 公开仓库中任何人可见源码,务必使用独立小额度 Key 并关注用量)
+  hideConfig: true             // true=隐藏线上页面的 AI 配置入口(⚙ 与 AI润色开关),成员直接使用共享配置
+};
+const ONLINE_CORPUS_URL = "./历史公告参考.txt";   // 历史公告在线存档(与 index.html 同目录一起上传),留空=关闭在线存档
+/* ══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ============ 常量与产品配置 ============ */
+const COLOR_TAGS = [
+  { k:"S", name:"深蓝", hex:"#1e3a8a" },
+  { k:"B", name:"蓝色", hex:"#2563eb" },
+  { k:"G", name:"绿色", hex:"#16a34a" },
+  { k:"O", name:"橙色", hex:"#f97316" },
+  { k:"R", name:"红色", hex:"#dc2626" }
+];
+const TAG_HEX = { S:"#1e3a8a", B:"#2563eb", G:"#16a34a", O:"#f97316", R:"#dc2626" };
+
+const DEFAULT_PRODUCTS = {
+  zx: {
+    key:"zx", name:"梦幻新诛仙", tag:"经典版",
+    colorModule:"S", colorDate:"G", colorItemHead:"B", colorGuide:"G", colorEmph:"R",
+    emphWords:"神兽",
+    indentSpaces:0, greeting:"致神州道友：", keepBlank:true
+  },
+  qx: {
+    key:"qx", name:"梦幻新诛仙:轻享", tag:"轻享版",
+    colorModule:"G", colorDate:"O", colorItemHead:"", colorGuide:"G", colorEmph:"R",
+    emphWords:"神兽",
+    indentSpaces:0, greeting:"致神州道友：", keepBlank:true
+  }
+};
+
+/* ============ 历史公告风格要点(内置,提炼自历史更新公告) ============ */
+const STYLE_GUIDE = "《梦幻新诛仙》公告风格要点(摘自历史更新公告)：\n" +
+"1. 开头固定句式:\"致神州道友：为给诸位仙盟道友带来更好的游戏体验，《梦幻新诛仙》于X月X日7:00-8:00进行例行维护，本次更新公告详情如下：\"(维护时间按实际填写);节日可改用\"道友们好！\"+节日祝福的活泼开头。\n" +
+"2. 模块结构:【新增内容】【优化和修复内容】(早期亦写【优化及修复内容】)【霸气星期五】等,模块标题用【】包裹;开头速览行样式为\"--·【更新公告速览】·--\"。\n" +
+"3. 编号规范:新增内容条目用\"01/02/03…\"单独成行、下一行写条目标题;优化修复条目用\"1. 2. 3.\"(数字后加空格);子条目用\"1）2）\"或\"- \";再细层级用\"①②③\"。\n" +
+"4. 引导词:上线时间、活动时间、活动规则、参与方式、功能入口、获取方式、温馨提示、名词解释、获取须知、活动奖励、参与规则、战斗规则等,冒号用全角\"：\"。\n" +
+"5. 语气:亲切活泼,称玩家为\"道友\";常用\"～\"\"！\"\"哦\"\"啦\"\"哟\"\"快来\"\"等你\"\"助你\"\"敬请期待\"\"惊喜\"\"豪礼\"\"好礼\"\"福利\";新内容常以对仗诗句开场;结尾常用\"更多详情请前往游戏内查看\"\"*最终更新内容请以游戏实际体验为准。\"\n" +
+"6. 常用固定语:\"本周霸气星期五免单来袭：\"\"#霸气星期五活动#线索\"\"惊喜返场\"\"限时上架\"\"正式上线\"\"全服上线\"\"即将开启\"\"等你来拿\"\"结缘\"\"限时特惠\"。\n" +
+"7. 术语标点:玩法/时装/坐骑名用「」;道具物品名用[];日期写\"2月5日\"(无前导零);时间用半角冒号如\"7:00-8:00\";列表序号后加空格。";
+
+const CN_NUM = { 一:1,二:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10 };
+const LEGIT_DUP = ["纷纷","天天","刚刚","慢慢","悄悄","轻轻","常常","往往","处处","人人","事事","年年","岁岁","层层","阵阵","丝丝","微微","渐渐","偏偏","恰恰","匆匆","整整","牢牢","紧紧","稳稳","静静","默默","频频","屡屡","徐徐","冉冉","闪闪","明明","久久","远远","高高","低低","深深","浅浅","淡淡","浓浓","甜甜","香香","暖暖","冷冷","热热","白白","黑黑","红红","绿绿","蓝蓝","长长","短短","大大","小小","多多","少少","圆圆","方方","弯弯","直直","宽宽","窄窄","厚厚","薄薄","实实在在","认认真真","仔仔细细","干干净净","整整齐齐","清清楚楚","明明白白","来来往往","家家户户","一一","双双","每每","看看","试试","想想","聊聊","玩玩","逛逛","瞧瞧","说说","等等","哈哈","嘿嘿","嘻嘻","呵呵","呼呼","咚咚","哒哒","滴滴","喵喵","汪汪","咻咻","嗖嗖","嗡嗡","叮叮","铛铛","轰轰","隆隆"];
+
+/* ============ 公告模板(按产品,日期自动为当天) ============ */
+const TPL_NAMES = { day:"日更公告", week:"周更公告", mailFix:"补偿邮件·功能异常", mailAct:"补偿邮件·活动异常" };
+
+function todayStr(){
+  const d = new Date();
+  return (d.getMonth() + 1) + "月" + d.getDate() + "日";
+}
+
+function tplOf(key){
+  const date = todayStr();
+  switch (key){
+    case "day":
+      return "致神州道友：\n为了给各位仙盟道友带来更好的游戏体验，我们对游戏进行了优化调整，当前重要更新如下：\n\n" + date + "补充公告内容";
+    case "week":
+      if (currentProduct === "qx"){
+        return "致神州道友：\n为给各位道友带来更好的游戏体验，《梦幻新诛仙:轻享》将于" + date + "6:30-7:30进行例行维护。本次维护将带来全新外观及多项功能优化与问题修复，具体更新内容如下：";
+      }
+      return "致神州道友：\n为给诸位仙盟道友带来更好的游戏体验，《梦幻新诛仙》于" + date + "7:00-8:00进行例行维护，本次更新公告详情如下：";
+    case "mailFix":
+      return "亲爱的道友：\n非常抱歉因数据异常，导致道友[交易行下架的部分装备]未正常领取。目前该问题已修复，特为道友补发对应[道具]，请及时点击下方按钮领取使用~给道友带来的不便，我们致以诚挚的歉意。\n感谢道友对我们的理解与支持，祝你仙途昌盛，游戏愉快！";
+    case "mailAct":
+      return "亲爱的道友：\n非常抱歉因数据异常，导致道友「[仙盟嘉赏]」的部分奖励未正常领取。目前该问题已修复，特为道友补发对应奖励，请及时点击下方按钮领取使用~给道友带来的不便，我们致以诚挚的歉意。\n感谢道友对我们的理解与支持，祝你仙途昌盛，游戏愉快！";
+  }
+  return "";
+}
+
+/* ============ DOM ============ */
+const $ = id => document.getElementById(id);
+const inputEl = $("input"), outputEl = $("output");
+const prodSeg = $("prodSeg"), kindSeg = $("kindSeg");
+let currentProduct = "zx", currentKind = "announcement";
+let lastBasis = "";   // 最近一次优化后的干净纯文本(AI 后,未加空格),供开关实时重渲染
+let fixEntries = [];  // 排版检查报告条目 {cat:fmt|check|ai, text}
+
+/* ============ 配置读写 ============ */
+function getProduct(){
+  let p = Object.assign({}, DEFAULT_PRODUCTS[currentProduct]);
+  try{
+    const saved = JSON.parse(localStorage.getItem("ggpa_prod_" + currentProduct) || "null");
+    if (saved) p = Object.assign(p, saved);
+  }catch(e){}
+  return p;
+}
+function saveProduct(p){
+  try{ localStorage.setItem("ggpa_prod_" + currentProduct, JSON.stringify(p)); }catch(e){}
+}
+function getAICfg(){
+  let cfg = { enabled:false, provider:"deepseek", endpoint:"", model:"", key:"" };
+  try{ const s = JSON.parse(localStorage.getItem("ggpa_ai_cfg") || "null"); if (s) cfg = Object.assign(cfg, s); }catch(e){}
+  // 后台共享配置:管理员在源码「后台配置区」维护,全体成员自动生效
+  if (SHARED_AI.enabled){
+    const p = AI_PRESETS.find(x => x.id === SHARED_AI.provider);
+    cfg.provider = SHARED_AI.provider;
+    cfg.endpoint = SHARED_AI.endpoint || (p ? p.endpoint : "");
+    cfg.model = SHARED_AI.model || (p ? p.model : "");
+    if (SHARED_AI.key) cfg.key = SHARED_AI.key;
+    if (SHARED_AI.hideConfig) cfg.enabled = true;
+  }
+  return cfg;
+}
+function getChips(){
+  let c = { plain:false, color:false, space:false };
+  try{ const s = JSON.parse(localStorage.getItem("ggpa_chips_v2") || "null"); if (s) c = Object.assign(c, s); }catch(e){}
+  return c;
+}
+
+/* ============ 标签剥离(逆向为纯文本) ============ */
+function stripMarkup(text){
+  return text
+    .replace(/<link=[^>]*>[\s\S]*?<\/link>/gi, "")
+    .replace(/<link=[^>]*\/?>/gi, "")
+    .replace(/<\/?(?:item|text)>/gi, "")
+    .replace(/<Segment\/>/gi, "")
+    .replace(/<N>/gi, "")
+    .replace(/<\/?(?:S|B|G|O|R)>/gi, "")
+    .replace(/[\t\v\f]/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+}
+
+/* ============ 纯文本清洗 ============ */
+function unifyPunctuation(text){
+  const map = { ",":"，", ";":"；", "?":"？", "!":"！", "(":"（", ")":"）" };
+  let out = "", openQuote = true, openSingle = true;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i], prev = text[i-1] || "", next = text[i+1] || "";
+    if (ch === "."){
+      const cw = c => /[A-Za-z0-9]/.test(c);
+      if (cw(prev) && cw(next)) out += ".";
+      else if (/[0-9]/.test(prev) && (/[\u4e00-\u9fa5]/.test(next) || next === " ")){
+        // 列表编号(1. xxx,含数字与内容间有空格的情况)或版本号(v2.0发布)保留半角点;
+        // 数字前紧邻汉字(如"完成5.下次")才是句尾句号
+        const before = text[i-2] || "";
+        out += /[\u4e00-\u9fa5]/.test(before) ? "。" : ".";
+      }
+      else out += "。";
+    } else if (ch === ":"){
+      out += (/[\d.]/.test(prev) && /[\d.]/.test(next)) ? ":" : "：";
+    } else if (ch === "\""){
+      out += openQuote ? "“" : "”"; openQuote = !openQuote;
+    } else if (ch === "'"){
+      out += openSingle ? "‘" : "’"; openSingle = !openSingle;
+    } else if (map[ch]){
+      out += map[ch];
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+function addCjkSpaces(text){
+  const UNITS = "年月日时分秒元角分个只件条次倍名位家服级";
+  return text
+    .replace(/([\u4e00-\u9fa5])([A-Za-z0-9])/g, (m, a, b) => (a === "第" || UNITS.includes(a) ? m : a + " " + b))
+    .replace(/([A-Za-z0-9])([\u4e00-\u9fa5])/g, (m, a, b) => (UNITS.includes(b) ? m : a + " " + b));
+}
+function cleanText(raw){
+  return raw
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/[ \t]+$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/* ============ 排版错误识别与修正(本地规则) ============ */
+function isLegitDupWord(w){ return LEGIT_DUP.indexOf(w) >= 0; }
+function bracketIssues(line){
+  const out = [];
+  const pairs = [["【","】"],["「","」"],["（","）"],["《","》"]];
+  for (const p of pairs){
+    const ca = line.split(p[0]).length - 1, cb = line.split(p[1]).length - 1;
+    if (ca !== cb) out.push(p[0] + "…" + p[1] + " 数量不匹配(" + ca + " 对 " + cb + ")");
+  }
+  return out;
+}
+function dupIssues(line){
+  const out = [];
+  const re = /([\u4e00-\u9fa5])\1+/g;
+  let m;
+  while ((m = re.exec(line))){
+    const w = m[0];
+    if (w.length === 2 && !isLegitDupWord(w)) out.push("疑似叠字错误:「" + w + "」");
+    else if (w.length > 2 && !/^[哈嘿嘻呵呜呼啦咚哒啪砰嗡轰咻嗖叮铛]+$/.test(w)) out.push("疑似重复字:「" + w + "」");
+  }
+  return out;
+}
+function fixFormatting(text){
+  const report = [];
+  const lines = text.split("\n");
+  const out = lines.map((raw, i) => {
+    let line = raw.trim();
+    const ln = i + 1;
+    let m;
+    if ((m = /^(\d{1,2})\s*[、，,．。]\s*/.exec(line))){
+      const old = m[0].replace(/\s+$/, "");
+      line = m[1] + ". " + line.slice(m[0].length).trim();
+      report.push({ cat:"fmt", text:"行" + ln + "｜序号 " + old + " → " + m[1] + ". " });
+    } else if ((m = /^(\d{1,2})\s*[:：]\s*(?!\d)/.exec(line))){
+      const old = m[0].replace(/\s+$/, "");
+      line = m[1] + ". " + line.slice(m[0].length).trim();
+      report.push({ cat:"fmt", text:"行" + ln + "｜序号 " + old + " → " + m[1] + ". " });
+    } else if ((m = /^(\d{1,2})\s*\.(?!\d)/.exec(line)) && !/^\d{1,2}\.\s/.test(line)){
+      line = m[1] + ". " + line.slice(m[0].length).replace(/^\s+/, "");
+      report.push({ cat:"fmt", text:"行" + ln + "｜序号后缺空格:" + m[0].trim() + " → " + m[1] + ". " });
+    } else if ((m = /^([一二三四五六七八九十])\s*[、，,.]\s*/.exec(line))){
+      const n = CN_NUM[m[1]];
+      line = n + ". " + line.slice(m[0].length).trim();
+      report.push({ cat:"fmt", text:"行" + ln + "｜中文序号 " + m[0].trim() + " → " + n + ". " });
+    } else if ((m = /^(\d{1,2})\s*\)\s*/.exec(line))){
+      line = m[1] + "）" + line.slice(m[0].length).trim();
+      report.push({ cat:"fmt", text:"行" + ln + "｜序号 " + m[0].trim() + " → " + m[1] + "）" });
+    } else if ((m = /^[(（]\s*(\d{1,2})\s*[)）]\s*/.exec(line))){
+      line = m[1] + "）" + line.slice(m[0].length).trim();
+      report.push({ cat:"fmt", text:"行" + ln + "｜序号 " + m[0].trim() + " → " + m[1] + "）" });
+    } else if ((m = /^[•·●]\s*/.exec(line))){
+      line = "- " + line.slice(m[0].length).trim();
+      report.push({ cat:"fmt", text:"行" + ln + "｜项目符号 " + m[0].trim() + " → - " });
+    }
+    const d1 = line.replace(/0(\d)月/g, "$1月").replace(/0(\d)日/g, "$1日");
+    const d2 = d1.replace(/(\d)：(\d)/g, "$1:$2").replace(/(\d{1,2})[—－–−](?=\d)/g, "$1-");
+    if (d2 !== line){
+      const seg = [];
+      if (/0\d月/.test(line) || /0\d日/.test(line)) seg.push("日期前导零");
+      if (/\d：\d/.test(line)) seg.push("时间全角冒号");
+      if (/\d[—－–−]\d/.test(line)) seg.push("区间连接号");
+      report.push({ cat:"fmt", text:"行" + ln + "｜" + seg.join("、") + " 已规范" });
+      line = d2;
+    }
+    bracketIssues(line).forEach(s => report.push({ cat:"check", text:"行" + ln + "｜" + s }));
+    dupIssues(line).forEach(s => report.push({ cat:"check", text:"行" + ln + "｜" + s }));
+    return line;
+  });
+  return { text: out.join("\n"), report };
+}
+
+/* 输出行映射:检查报告的行号 → 实际输出行号(连续空行会被压缩,与 buildBlocks 规则一致) */
+function outputLineMap(text){
+  const lines = text.split("\n");
+  const map = [];
+  let outIdx = 0, prevBlank = false, first = true;
+  for (const ln of lines){
+    if (!ln){
+      if (!prevBlank && !first){ map.push(outIdx); outIdx++; }
+      else map.push(-1);
+      prevBlank = true;
+    } else {
+      map.push(outIdx); outIdx++;
+      prevBlank = false;
+    }
+    first = false;
+  }
+  return map;
+}
+
+/* ============ 结构识别(游戏公告语境) ============ */
+const RE_GREET = /^(致神州道友|亲爱的道友|各位道友|尊敬的道友)/;
+const RE_MODULE = /^【[^】]{1,12}】$/;
+const RE_BARE_MODULE = /^(新增内容|优化内容|修复内容|优化和修复内容|修复和优化内容|新增玩法|活动内容|调整内容|新增功能|优化功能|活动玩法|全新玩法|优化修复内容)$/;
+const RE_SEP = /^>>>>.*<<<<$/;
+
+function normModule(t){
+  if (RE_MODULE.test(t)) return t;
+  if (RE_BARE_MODULE.test(t)) return "【" + t + "】";
+  return null;
+}
+
+function detectLevel(t){
+  if (/^[①②③④⑤⑥⑦⑧⑨⑩]/.test(t)) return 4;
+  if (/^\d{1,2}\)/.test(t)) return 3;
+  if (/^[-•·]\s*/.test(t)) return 2;
+  if (/^\d{1,2}\s*[、.．]/.test(t)) return 1;
+  return 0;
+}
+
+function lineType(t){
+  if (normModule(t)) return "module";
+  if (RE_SEP.test(t)) return "sep";
+  if (detectLevel(t)) return "list";
+  return "para";
+}
+
+function buildBlocks(text){
+  const lines = text.split("\n");
+  const blocks = [];
+  let state = "start";
+  for (const raw of lines){
+    const t = raw.trim();
+    if (!t){ blocks.push({ type:"blank", text:"" }); continue; }
+    if (state === "start" && RE_GREET.test(t)){
+      const g = /[:：]$/.test(t) ? t : t + "：";
+      blocks.push({ type:"greeting", text:g });
+      state = "lead";
+      continue;
+    }
+    if (state === "lead"){
+      blocks.push({ type:"lead", text:t });
+      state = "body";
+      continue;
+    }
+    const nm = normModule(t);
+    if (nm){ blocks.push({ type:"module", text:nm }); }
+    else blocks.push({ type: lineType(t), text:t });
+    if (state === "start") state = "body";
+  }
+  // 仅压缩连续空行,完全尊重原文分段
+  const res = [];
+  let prevBlank = false;
+  for (const b of blocks){
+    if (b.type === "blank"){
+      if (!prevBlank && res.length) res.push(b);
+      prevBlank = true;
+    } else {
+      res.push(b);
+      prevBlank = false;
+    }
+  }
+  return res;
+}
+
+/* ============ 智能上色 ============ */
+/* 周更公告颜色规范(与日更有区别):经典与日更一致;轻享周更:模块/条目标题 O,时间/引导词 G */
+const WEEKLY_COLORS = {
+  zx: {},
+  qx: { colorModule:"O", colorItemHead:"O", colorGuide:"G" }
+};
+let weeklyMode = false;
+/* 引导词与时间行(含活动时间/上线时间/维护时间等) */
+const RE_GUIDE_TIME = /^(活动时间|上线时间|维护时间|开放时间|开启时间|结束时间|兑换时间|报名时间|竞猜时间|领取时间|售卖时间|申购时间|交易时间|活动日期|活动规则|参与方式|功能入口|成长与玩法|三大板块|活动奖励|任务说明|活动详情|参与条件|奖励说明|活动内容)[:：]/;
+function lineColor(t, prod){
+  if (currentKind !== "announcement") return "";
+  const rules = (weeklyMode && WEEKLY_COLORS[prod.key]) ? Object.assign({}, prod, WEEKLY_COLORS[prod.key]) : prod;
+  if (normModule(t)) return rules.colorModule;
+  if (RE_SEP.test(t)) return "";
+  if (/^\d{1,2}月\d{1,2}日[^。，]{0,12}$/.test(t) && /(公告|更新|维护)/.test(t)) return rules.colorDate;
+  if (RE_GUIDE_TIME.test(t)) return rules.colorGuide;   // 引导词/时间行着色(如 活动时间：)
+  if (/^\d{1,2}月\d{1,2}日(维护后)?\s*[-~—－至]/.test(t)) return rules.colorGuide;   // 独立时间区间行(如 9月3日维护后-9月30日)
+  if (rules.colorItemHead){
+    const m = /^\d{1,2}\s*[、.．]\s*/.exec(t);
+    if (m){
+      const body = t.slice(m[0].length).trim();
+      if (body.length <= 20 && !/^(修复|增加|优化|调整)/.test(body) && /[，、！!。：「」·]/.test(body)) return rules.colorItemHead;
+    }
+  }
+  return "";
+}
+
+function applyEmph(t, prod){
+  if (!prod.colorEmph || !prod.emphWords || !prod.emphWords.trim()) return null;
+  const words = prod.emphWords.split(/[,，、\s]+/).filter(Boolean);
+  for (const w of words){
+    const i = t.indexOf(w);
+    if (i >= 0) return { pre: t.slice(0, i), tail: "<" + prod.colorEmph + ">" + t.slice(i) };
+  }
+  return null;
+}
+
+/* ============ 渲染 ============ */
+function renderRich(blocks, prod, noColor){
+  const out = ["<item><text>"];
+  for (const b of blocks){
+    if (b.type === "blank"){
+      if (prod.keepBlank !== false) out.push("");
+      continue;
+    }
+    if (b.type === "greeting"){ out.push(b.text); continue; }
+    if (b.type === "lead"){
+      // 引导段用真实空格缩进(轻享 4 空格 / 经典 7 空格),不使用 <Segment/>
+      const leadInd = prod.key === "qx" ? 4 : 7;
+      out.push(" ".repeat(leadInd) + b.text);
+      continue;
+    }
+    if (b.type === "sep"){ out.push(b.text); continue; }
+    if (noColor){
+      // 无颜色行不带 <N>,直接换行
+      out.push("<Segment/>" + b.text);
+      continue;
+    }
+    const c = lineColor(b.text, prod);
+    if (c){
+      // 颜色代码与 <N> 成对出现:<X>内容<N>
+      out.push("<Segment/><" + c + ">" + b.text + "<N>");
+    } else {
+      const e = applyEmph(b.text, prod);
+      if (e) out.push("<Segment/>" + e.pre + e.tail + "<N>");
+      else out.push("<Segment/>" + b.text);
+    }
+  }
+  out.push("</text></item>");
+  return out.join("\n");
+}
+
+function indentFor(b, prod){
+  if (b.type === "greeting") return 0;
+  if (b.type === "sep") return 0;
+  const lv = detectLevel(b.text);
+  if (lv > 0 && prod.key === "qx") return lv - 1;  // 轻享分级:一级0 二级1 三级2 四级3
+  if (currentKind === "mail") return 4;
+  return prod.indentSpaces;
+}
+
+function renderPlain(blocks, prod){
+  const out = [];
+  for (const b of blocks){
+    if (b.type === "blank"){
+      if (prod.keepBlank !== false) out.push("");
+      continue;
+    }
+    const ind = indentFor(b, prod);
+    out.push(" ".repeat(ind) + b.text);
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+
+/* ============ Word(docx)生成 ============ */
+function esc(s){
+  if (s == null) return "";
+  s = String(s);
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function paraXML(text, o){
+  const rPr = "<w:rPr>" + (o.bold ? "<w:b/>" : "") +
+    "<w:sz w:val=\"" + o.sz + "\"/><w:szCs w:val=\"" + o.sz + "\"/>" +
+    "<w:rFonts w:ascii=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:eastAsia=\"" + o.font + "\"/></w:rPr>";
+  const pPr = "<w:pPr><w:spacing w:line=\"" + o.spacing + "\" w:lineRule=\"auto\"/>" +
+    "<w:jc w:val=\"" + o.jc + "\"/>" +
+    (o.indentChars ? "<w:ind w:firstLineChars=\"" + o.indentChars + "\" w:firstLine=\"480\"/>" : "") +
+    "</w:pPr>";
+  return "<w:p>" + pPr + "<w:r>" + rPr + "<w:t xml:space=\"preserve\">" + esc(text) + "</w:t></w:r></w:p>";
+}
+function buildDocx(blocks, prod){
+  const body = [];
+  for (const b of blocks){
+    if (b.type === "blank"){ body.push("<w:p/>"); continue; }
+    if (b.type === "greeting" || b.type === "sep"){
+      body.push(paraXML(b.text, { jc:"left", bold:false, sz:24, font:"微软雅黑", spacing:360 }));
+      continue;
+    }
+    body.push(paraXML(b.text, { jc:"left", bold:false, sz:24, font:"微软雅黑", spacing:360, indentChars:200 }));
+  }
+  const documentXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+    "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">" +
+    "<w:body>" + body.join("") +
+    "<w:sectPr><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\" w:header=\"720\" w:footer=\"720\" w:gutter=\"0\"/></w:sectPr>" +
+    "</w:body></w:document>";
+  const contentTypes = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+    "</Types>";
+  const rels = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/>" +
+    "</Relationships>";
+  const docRels = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"></Relationships>";
+  const enc = new TextEncoder();
+  return buildZip([
+    { name:"[Content_Types].xml", data: enc.encode(contentTypes) },
+    { name:"_rels/.rels", data: enc.encode(rels) },
+    { name:"word/document.xml", data: enc.encode(documentXml) },
+    { name:"word/_rels/document.xml.rels", data: enc.encode(docRels) }
+  ]);
+}
+
+/* ---------- 最小 ZIP 打包(仅存储) ---------- */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(u8){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function buildZip(files){
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  for (const f of files){
+    const nameB = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const lh = new Uint8Array(30 + nameB.length);
+    const dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0x0800, true);
+    dv.setUint16(8, 0, true);
+    dv.setUint16(10, 0, true); dv.setUint16(12, 0, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, f.data.length, true);
+    dv.setUint32(22, f.data.length, true);
+    dv.setUint16(26, nameB.length, true);
+    dv.setUint16(28, 0, true);
+    lh.set(nameB, 30);
+    parts.push(lh, f.data);
+    central.push({ nameB, crc, size: f.data.length, offset });
+    offset += lh.length + f.data.length;
+  }
+  const cdParts = [];
+  let cdSize = 0;
+  for (const c of central){
+    const cd = new Uint8Array(46 + c.nameB.length);
+    const dv = new DataView(cd.buffer);
+    dv.setUint32(0, 0x02014b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 20, true);
+    dv.setUint16(8, 0x0800, true);
+    dv.setUint16(10, 0, true);
+    dv.setUint16(12, 0, true); dv.setUint16(14, 0, true);
+    dv.setUint32(16, c.crc, true);
+    dv.setUint32(20, c.size, true);
+    dv.setUint32(24, c.size, true);
+    dv.setUint16(28, c.nameB.length, true);
+    dv.setUint32(42, c.offset, true);
+    cd.set(c.nameB, 46);
+    cdParts.push(cd);
+    cdSize += cd.length;
+  }
+  const eocd = new Uint8Array(22);
+  const dv = new DataView(eocd.buffer);
+  dv.setUint32(0, 0x06054b50, true);
+  dv.setUint16(8, central.length, true);
+  dv.setUint16(10, central.length, true);
+  dv.setUint32(12, cdSize, true);
+  dv.setUint32(16, offset, true);
+  parts.push.apply(parts, cdParts);
+  parts.push(eocd);
+  return new Blob(parts, { type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+}
+
+/* ---------- ZIP 读取(docx/xlsx) ---------- */
+async function readZip(file){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let eocd = -1;
+  const start = Math.max(0, buf.length - 22 - 65536);
+  for (let i = buf.length - 22; i >= start; i--){
+    if (buf[i] === 0x50 && buf[i+1] === 0x4b && buf[i+2] === 0x05 && buf[i+3] === 0x06){ eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("不是有效的 docx/xlsx 文件");
+  const cdCount = dv.getUint16(eocd + 10, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  if (cdCount === 0xFFFF || cdOffset === 0xFFFFFFFF) throw new Error("暂不支持 zip64 格式");
+  const entries = [];
+  let p = cdOffset;
+  for (let n = 0; n < cdCount; n++){
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error("zip 目录解析失败");
+    const method = dv.getUint16(p + 10, true);
+    const compSize = dv.getUint32(p + 20, true);
+    const nameLen = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const commentLen = dv.getUint16(p + 32, true);
+    const localOffset = dv.getUint32(p + 42, true);
+    const name = new TextDecoder("utf-8").decode(buf.subarray(p + 46, p + 46 + nameLen));
+    entries.push({ name, method, compSize, localOffset });
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  async function extract(entry){
+    const lo = entry.localOffset;
+    const lNameLen = dv.getUint16(lo + 26, true);
+    const lExtraLen = dv.getUint16(lo + 28, true);
+    const dataStart = lo + 30 + lNameLen + lExtraLen;
+    const raw = buf.subarray(dataStart, dataStart + entry.compSize);
+    if (entry.method === 0) return raw;
+    if (entry.method === 8){
+      const ds = new DecompressionStream("deflate-raw");
+      const stream = new Blob([raw]).stream().pipeThrough(ds);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    throw new Error("不支持的压缩方式:" + entry.method);
+  }
+  return { entries, extract };
+}
+function xmlDoc(u8){
+  return new DOMParser().parseFromString(new TextDecoder("utf-8").decode(u8), "application/xml");
+}
+async function parseDocx(file){
+  const zip = await readZip(file);
+  let entry = zip.entries.find(e => e.name === "word/document.xml");
+  if (!entry) entry = zip.entries.find(e => e.name.endsWith("document.xml"));
+  if (!entry) throw new Error("文件中未找到正文内容");
+  const doc = xmlDoc(await zip.extract(entry));
+  const body = doc.getElementsByTagName("w:body")[0];
+  if (!body) throw new Error("Word 正文结构解析失败");
+  const out = [];
+  for (const node of body.children){
+    if (node.tagName === "w:p"){
+      let t = "";
+      for (const el of node.getElementsByTagName("w:t")) t += el.textContent;
+      out.push(t);
+    } else if (node.tagName === "w:tbl"){
+      for (const tr of node.getElementsByTagName("w:tr")){
+        const cells = [];
+        for (const tc of tr.getElementsByTagName("w:tc")){
+          let t = "";
+          for (const el of tc.getElementsByTagName("w:t")) t += el.textContent;
+          cells.push(t.trim());
+        }
+        out.push(cells.join("\t"));
+      }
+    }
+  }
+  return out.join("\n").trim();
+}
+async function parseXlsx(file){
+  const zip = await readZip(file);
+  let strings = [];
+  const ss = zip.entries.find(e => e.name === "xl/sharedStrings.xml");
+  if (ss){
+    const doc = xmlDoc(await zip.extract(ss));
+    for (const si of doc.getElementsByTagName("si")){
+      let s = "";
+      for (const t of si.getElementsByTagName("t")) s += t.textContent;
+      strings.push(s);
+    }
+  }
+  const sheetEntries = zip.entries
+    .filter(e => /^xl\/worksheets\/sheet\d+\.xml$/.test(e.name))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric:true }));
+  if (!sheetEntries.length) throw new Error("未找到工作表");
+  const doc = xmlDoc(await zip.extract(sheetEntries[0]));
+  const rows = [];
+  for (const row of doc.getElementsByTagName("row")){
+    const cells = [];
+    for (const c of row.getElementsByTagName("c")){
+      const t = c.getAttribute("t");
+      const vEl = c.getElementsByTagName("v")[0];
+      const isEl = c.getElementsByTagName("is")[0];
+      let v = "";
+      if (t === "inlineStr" && isEl) v = isEl.textContent;
+      else if (vEl){
+        const num = vEl.textContent;
+        v = (t === "s") ? (strings[+num] ?? "") : num;
+      }
+      cells.push(v.trim());
+    }
+    if (cells.some(x => x !== "")) rows.push(cells.join("\t"));
+  }
+  return rows.join("\n").trim();
+}
+async function readUploadedFile(file){
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".docx")) return parseDocx(file);
+  if (name.endsWith(".xlsx")) return parseXlsx(file);
+  if (/\.(txt|md|csv)$/.test(name)) return new TextDecoder("utf-8").decode(await file.arrayBuffer());
+  throw new Error("不支持的文件类型:" + file.name);
+}
+
+/* ============ AI 润色(可选,参考历史公告风格) ============ */
+function getStyleRef(){
+  try{ const s = localStorage.getItem("ggpa_style_ref"); return s || ""; }catch(e){ return ""; }
+}
+/* ============ 参考库:本地文件关联 + 自定义语料 ============ */
+function hasFSA(){ return typeof window.showOpenFilePicker === "function"; }
+function idbOpen(){
+  return new Promise((res, rej) => {
+    let r;
+    try{ r = indexedDB.open("ggpa_ref_db", 1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded = () => { try{ r.result.createObjectStore("kv"); }catch(e){} };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(key){
+  try{
+    const db = await idbOpen();
+    return await new Promise((res) => {
+      const tx = db.transaction("kv", "readonly");
+      const g = tx.objectStore("kv").get(key);
+      g.onsuccess = () => res(g.result || null);
+      g.onerror = () => res(null);
+    });
+  }catch(e){ return null; }
+}
+async function idbSet(key, val){
+  try{
+    const db = await idbOpen();
+    return await new Promise((res) => {
+      const tx = db.transaction("kv", "readwrite");
+      tx.objectStore("kv").put(val, key);
+      tx.oncomplete = () => res(true);
+      tx.onerror = () => res(false);
+    });
+  }catch(e){ return false; }
+}
+async function idbDel(key){
+  try{
+    const db = await idbOpen();
+    return await new Promise((res) => {
+      const tx = db.transaction("kv", "readwrite");
+      tx.objectStore("kv").delete(key);
+      tx.oncomplete = () => res(true);
+      tx.onerror = () => res(false);
+    });
+  }catch(e){ return false; }
+}
+async function getLinkedFileHandle(){
+  if (!hasFSA()) return null;
+  return await idbGet("fileHandle");
+}
+/* 关联文件的内容缓存:授权失效时兜底使用(存浏览器本地,关闭页面不丢失) */
+const LINK_CACHE_KEY = "ggpa_linked_cache";
+function getLinkedCache(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LINK_CACHE_KEY) || "null");
+    return s && typeof s.text === "string" ? s : null;
+  }catch(e){ return null; }
+}
+function setLinkedCache(name, text){
+  try{ localStorage.setItem(LINK_CACHE_KEY, JSON.stringify({ name, text, time: Date.now() })); }catch(e){}
+}
+async function readLinkedFile(){
+  const fh = await getLinkedFileHandle();
+  if (!fh){
+    // 没有保存的授权(如浏览器未保存 handle):使用上次关联时的内容缓存
+    const cache = getLinkedCache();
+    if (cache && cache.text.trim()) return { name: cache.name, text: cache.text, error: "未找到授权记录,使用内容缓存", fromCache: true };
+    return null;
+  }
+  try{
+    const f = await fh.getFile();
+    let text;
+    if (f.name.toLowerCase().endsWith(".docx")) text = await parseDocx(f);
+    else text = await f.text();
+    if (text && text.trim()) setLinkedCache(f.name, text);
+    return { name: f.name, text: text || "" };
+  }catch(e){
+    // 授权失效:回退到内容缓存,保证关闭页面后依然可用
+    const cache = getLinkedCache();
+    if (cache && cache.text.trim()){
+      return { name: fh.name || cache.name, text: cache.text, error: "授权已失效,使用内容缓存", fromCache: true };
+    }
+    return { name: fh.name || "?", text: "", error: String((e && e.message) || e) };
+  }
+}
+function getCustomCorpus(){
+  try{ return localStorage.getItem("ggpa_custom_corpus") || ""; }catch(e){ return ""; }
+}
+/* 在线存档:从站点同目录读取历史公告 txt(管理员上传,全员共用,含手机端) */
+let onlineCorpusCache = null;
+async function readOnlineCorpus(){
+  if (!ONLINE_CORPUS_URL) return null;
+  try{
+    const res = await fetch(ONLINE_CORPUS_URL, { cache: "no-cache" });
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (text && text.trim()){ onlineCorpusCache = { text, time: Date.now() }; return text; }
+  }catch(e){}
+  return null;
+}
+function getStyleMode(){
+  try{ const m = localStorage.getItem("ggpa_style_mode"); if (m === "full" || m === "smart") return m; }catch(e){}
+  return "smart";
+}
+function splitAnnouncements(doc){
+  const out = [];
+  const re = /^(\d{4})\s*更新公告\s*$/gm;
+  let m, last = -1;
+  while ((m = re.exec(doc))){
+    if (last >= 0){
+      const text = doc.slice(last, m.index).trim();
+      if (text) out.push({ title: text.split("\n")[0].trim(), text });
+    }
+    last = m.index;
+  }
+  if (last >= 0){
+    const text = doc.slice(last).trim();
+    if (text) out.push({ title: text.split("\n")[0].trim(), text });
+  }
+  return out;
+}
+function tokenizeCJK(s){
+  const set = {};
+  const re = /[\u4e00-\u9fa5]{2,6}/g;
+  let m;
+  while ((m = re.exec(s))){
+    const w = m[0];
+    if (w.length >= 2) set[w] = (set[w] || 0) + 1;
+  }
+  return set;
+}
+function selectRelevantDoc(doc, currentText, topN, maxChars){
+  const anns = splitAnnouncements(doc);
+  if (!anns.length) return doc.slice(0, maxChars || 14000);
+  const cur = tokenizeCJK(currentText || "");
+  const scored = anns.map(a => {
+    let score = 0;
+    const t = tokenizeCJK(a.text);
+    for (const w in t){ if (cur[w]) score += Math.min(t[w], cur[w]); }
+    return { a, score };
+  });
+  const anyHit = scored.some(s => s.score > 0);
+  if (!anyHit){
+    // 没有相关篇目时,取最近 3 篇(文档按时间顺序,末尾最新)
+    return anns.slice(-3).map(a => "【参考篇目:" + a.title + "】\n" + a.text).join("\n\n");
+  }
+  scored.sort((x, y) => y.score - x.score);
+  const picked = [];
+  let total = 0;
+  for (const s of scored){
+    if (picked.length >= (topN || 3)) break;
+    picked.push(s.a);
+    total += s.a.text.length;
+    if (maxChars && total >= maxChars) break;
+  }
+  return picked.map(a => "【参考篇目:" + a.title + "】\n" + a.text).join("\n\n");
+}
+let styleWarnShown = false;
+async function asyncStyleContext(prod, currentText){
+  const parts = [STYLE_GUIDE];
+  let doc = "";
+  // 语料优先级:在线存档 > 本地关联文件 > 自定义语料
+  const online = await readOnlineCorpus();
+  if (online && online.trim()) doc = online;
+  if (!doc){
+    const linked = await readLinkedFile();
+    if (linked && linked.text.trim()) doc = linked.text;
+    else if (linked && linked.error && !styleWarnShown){
+      styleWarnShown = true;
+      toast("本地关联文件读取失败(授权失效属正常现象),已回退使用在线存档/自定义语料;可到「📚 参考库」重新关联");
+    }
+  }
+  if (!doc) doc = getCustomCorpus();
+  if (doc.trim()){
+    if (getStyleMode() === "full"){
+      if (doc.length > 300000) doc = doc.slice(0, 300000) + "\n\n(参考语料超长,仅发送前 30 万字)";
+      parts.push("【历史公告全文】\n" + doc);
+    } else {
+      parts.push("【历史公告相关篇目(自动精选)】\n" + selectRelevantDoc(doc, currentText || "", 3, 14000));
+    }
+  }
+  const extra = getStyleRef();
+  if (extra) parts.push("【补充参考】\n" + extra);
+  return parts.join("\n\n");
+}
+/* 接口地址规范化:自动补全缺失的 /chat/completions,避免 404 */
+function normalizeEndpoint(ep){
+  let u = (ep || "").trim();
+  if (!u) return u;
+  u = u.replace(/\/+$/, "");
+  if (!/\/chat\/completions$/i.test(u) && /(\/v\d+|\/api|:\d+|\.[a-z]{2,})$/i.test(u)){
+    u += "/chat/completions";
+  }
+  return u;
+}
+async function callAI(cfg, system, user, temperature, onDelta){
+  const url = normalizeEndpoint(cfg.endpoint);
+  const useStream = typeof onDelta === "function";
+  const res = await fetch(url, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + cfg.key },
+    body: JSON.stringify({
+      model: cfg.model,
+      temperature: temperature == null ? 0.4 : temperature,
+      stream: useStream,
+      messages:[
+        { role:"system", content: system },
+        { role:"user", content: user }
+      ]
+    })
+  });
+  if (!res.ok){
+    const body = await res.text().catch(() => "");
+    let hint = "";
+    if (res.status === 404) hint = "。404 一般是接口地址/路径不对,当前请求地址:" + url + ";DeepSeek 官方地址应为 https://api.deepseek.com/chat/completions";
+    else if (res.status === 401) hint = "。401 是 API Key 无效或填错,请检查 Key";
+    else if (res.status === 400) hint = "。400 一般是模型名不对(DeepSeek 官方现用 deepseek-flash / deepseek-v4-pro)或请求参数问题";
+    else if (res.status === 429) hint = "。429 是额度不足或请求太频繁";
+    throw new Error("AI 接口返回 " + res.status + hint + (body ? ":" + body.slice(0, 200) : ""));
+  }
+  if (useStream && (res.headers.get("content-type") || "").indexOf("text/event-stream") >= 0){
+    // 流式解析:边生成边回传,用于进度展示
+    const reader = res.body.getReader();
+    const dec = new TextDecoder("utf-8");
+    let buf = "", full = "";
+    for (;;){
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream:true });
+      let idx;
+      while ((idx = buf.indexOf("\n")) >= 0){
+        const line = buf.slice(0, idx).trim();
+        buf = buf.slice(idx + 1);
+        if (!line || line.indexOf("data:") !== 0) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try{
+          const j = JSON.parse(payload);
+          const delta = j && j.choices && j.choices[0] && j.choices[0].delta;
+          if (delta){
+            if (delta.reasoning_content) onDelta("", delta.reasoning_content);
+            if (delta.content){ full += delta.content; onDelta(delta.content, ""); }
+          }
+        }catch(e){}
+      }
+    }
+    if (!full) throw new Error("AI 返回内容为空");
+    return full;
+  }
+  const data = await res.json();
+  const out = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : null;
+  if (!out) throw new Error("AI 返回内容为空");
+  if (useStream && onDelta) onDelta(out, "");
+  return out;
+}
+
+/* ============ AI 进度展示(输出面板内) ============ */
+let aiTimer = null, aiStart = 0, aiAccText = "", aiAccThink = "";
+function showAIProgress(status){
+  aiStart = Date.now();
+  aiAccText = ""; aiAccThink = "";
+  $("aiProgress").hidden = false;
+  $("aiPreview").hidden = true;
+  $("aiPreview").textContent = "";
+  $("aiStatus").textContent = status || "✨ AI 正在润色中…";
+  clearInterval(aiTimer);
+  aiTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - aiStart) / 1000);
+    $("aiStatus").textContent = "✨ AI 正在润色中… 已用时 " + s + "s" + (s > 60 ? "(参考语料较多时会偏慢,请耐心等待)" : "");
+  }, 1000);
+}
+function aiDelta(dText, dThink){
+  if (dThink) aiAccThink += dThink;
+  if (dText) aiAccText += dText;
+  const el = $("aiPreview");
+  if (!el) return;
+  el.hidden = false;
+  if (aiAccThink && !aiAccText){
+    el.textContent = "💭 思考中: " + aiAccThink.slice(-300);
+  } else {
+    el.textContent = "📝 输出中: " + (aiAccText || aiAccThink).slice(-300);
+  }
+}
+function hideAIProgress(){
+  clearInterval(aiTimer);
+  aiTimer = null;
+  $("aiProgress").hidden = true;
+}
+/* 解析 AI 返回的 JSON(降级为纯文本) */
+function parseAIResult(out){
+  const s = (out || "").replace(/^\s*```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  try{
+    const obj = JSON.parse(s);
+    if (obj && typeof obj.text === "string" && obj.text.trim()) return { issues: Array.isArray(obj.issues) ? obj.issues : [], text: obj.text };
+  }catch(e){}
+  return { issues: [], text: out };
+}
+/* 修复 AI 输出常见的"序号拆行"问题(如 "1\n标题" → "1. 标题");不动 01/02 类独立编号 */
+function repairAILines(text){
+  const lines = (text || "").split("\n");
+  const out = [];
+  for (let i = 0; i < lines.length; i++){
+    const line = lines[i];
+    const next = lines[i + 1];
+    if (next != null && next.trim()){
+      const t = line.trim();
+      let merged = null;
+      if (/^[1-9]\d{0,1}$/.test(t)) merged = t + ". " + next.trim();
+      else if (/^[1-9]\d{0,1}\s*[.、．]\s*$/.test(t)) merged = t.replace(/\s+$/, "") + " " + next.trim();
+      else if (/^[1-9]\d{0,1}\s*[)）]\s*$/.test(t)) merged = t.replace(/\s+$/, "") + next.trim();
+      else if (/^[①②③④⑤⑥⑦⑧⑨⑩]\s*$/.test(t)) merged = t + " " + next.trim();
+      if (merged != null){ out.push(merged); i++; continue; }
+    }
+    out.push(line);
+  }
+  return out.join("\n");
+}
+async function aiPolish(text, cfg, prod, onDelta){
+  const system = "你是资深游戏运营文案编辑,为" + prod.name + "撰写公告与邮件。" + (await asyncStyleContext(prod, text)) +
+    "\n\n润色要求(重要):1)你只负责语句层面的润色与纠错,排版(序号、空行、段落、标点格式)由本地规则统一处理,不要重新排版、不要改动序号与空行;2)逐行审查,评估每句表达是否准确、通畅,仅修正语句不通顺、语病、错别字、表达混乱,并参考历史公告语气做小幅提升;3)筛查专有名词符号:道具/物品名用[],玩法/时装/坐骑名用「」,混用、漏用、错用请修正并在 issues 中说明;4)原文已通顺且符合历史公告风格/背景的句子一律原样保留,不要改写、不要整段重写;5)输出行数必须与输入完全一致、逐行一一对应(多一行少一行都不行),空行位置与数量保持不变,禁止在序号(如 1. 1) - ①②)后换行、禁止把一行拆成多行(例如输入\"1. 标题\"必须原样保持一行,不得拆成\"1\"和\"标题\"两行);6)保持原文全部事实、数字、日期、道具名、活动名、模块标题不变。\n只输出一个 JSON 对象:{\"issues\":[{\"pos\":\"定位(行号或片段)\",\"problem\":\"问题\",\"fix\":\"修改说明\"}],\"text\":\"润色后的完整正文\"};issues 无问题则为空数组,text 必须完整输出。";
+  return parseAIResult(await callAI(cfg, system, text, undefined, onDelta));
+}
+async function aiDeepPolish(text, cfg, prod, onDelta){
+  const system = "你是资深游戏运营文案编辑,负责" + prod.name + "公告与邮件的深度润色与内容检查。" + (await asyncStyleContext(prod, text)) +
+    "\n\n任务:1)逐行审查并评估每句表达是否准确、通畅,修正语句问题(语病、错别字、表达混乱、歧义、重复啰嗦、指代不清);2)参考历史公告的语气与表述习惯,对个别语句做小幅润色,提升阅读与理解体验;3)筛查专有名词符号是否规范:道具/物品名用[],玩法/时装/坐骑/称谓等名称用「」,发现混用、漏用、错用请修正并在 issues 中说明;4)检查内容错误(日期、数字、时间、活动名、道具名前后矛盾或明显遗漏)并逐条说明。\n润色原则(重要):只做语句级最小修改——原文已通顺且符合历史公告风格/背景的句子一律原样保留,禁止整段重写、禁止改变表达基调;不做任何排版工作,输出行数必须与输入完全一致、逐行一一对应(多一行少一行都不行),序号、空行、段落结构保持原样,禁止在序号(如 1. 1) - ①②)后换行、禁止把一行拆成多行(排版由本地规则统一处理)。\n硬性要求:保持原文全部事实、数字、日期、时间、道具名、活动名、模块标题不变;不得增删活动与规则内容;序号格式保持不变。\n只输出一个 JSON 对象:{\"issues\":[{\"pos\":\"定位(行号或片段)\",\"problem\":\"问题\",\"fix\":\"修改说明\"}],\"text\":\"润色后的完整正文\"};issues 无问题则为空数组,text 必须完整输出不得省略。";
+  return parseAIResult(await callAI(cfg, system, text, 0.4, onDelta));
+}
+
+/* ============ 主流程 ============ */
+function chips(){
+  return {
+    plain: $("chipPlain").classList.contains("on"),
+    color: $("chipColor").classList.contains("on"),
+    space: $("chipSpace").classList.contains("on")
+  };
+}
+async function optimize(){
+  const raw = inputEl.value;
+  if (!raw.trim()){ toast("请先粘贴或上传需要优化的内容"); return; }
+  const prod = getProduct();
+  const cfg = getAICfg();
+  if (cfg.enabled && (!cfg.endpoint || !cfg.key)){
+    if (SHARED_AI.enabled && SHARED_AI.hideConfig){
+      cfg.enabled = false;   // 共享 Key 未配置时,自动降级为纯本地排版,不阻断使用
+    } else {
+      toast("AI 润色已开启但未配置接口,请点 ⚙ 完成配置");
+      return;
+    }
+  }
+  const c = chips();
+  const optBtn = $("optBtn");
+  optBtn.disabled = true;
+  $("outHint").textContent = "处理中…";
+  clearAIRecords();   // 新一轮优化=新版本内容,历史 AI 修改记录全部清空
+  try{
+    let text = stripMarkup(raw);
+    text = unifyPunctuation(cleanText(text));
+    const fr = fixFormatting(text);   // 本地排版错误识别与修正
+    text = fr.text;
+    fixEntries = fr.report;
+    weeklyMode = currentTpl === "week" || /例行维护/.test(text);   // 周更公告颜色规范
+    // 把报告行号重映射为"输出坐标"(连续空行压缩后),点击定位才能对准
+    const lineMap = outputLineMap(text);
+    fixEntries.forEach(r => {
+      const m = /^行(\d+)/.exec(r.text);
+      if (m){
+        const out = (+m[1] >= 1 && +m[1] <= lineMap.length) ? lineMap[+m[1] - 1] : -1;
+        r.line = out >= 0 ? out + 1 : 0;
+      }
+    });
+    let basis = text;               // 未加空格的干净文本
+    if (c.space) text = addCjkSpaces(text);
+    const blocks = buildBlocks(text);
+    const plainOut = renderPlain(blocks, prod);
+
+    let outText;
+    if (currentKind === "mail" || c.plain){
+      outText = plainOut;
+      $("outHint").textContent = currentKind === "mail" ? "邮件 · 纯文本排版完成" : "纯文本模式完成";
+    } else {
+      outText = renderRich(blocks, prod, !c.color);
+      $("outHint").textContent = c.color ? "富文本 · 智能上色完成" : "富文本 · 未上色完成";
+    }
+
+    if (cfg.enabled){
+      if (!(await hasStyleCorpus())){
+        const r = await confirmDialog(STYLE_CORPUS_CONFIRM, "继续润色", "去配置参考库");
+        if (r === "config"){ $("outHint").textContent = "已取消,请先配置参考库"; openLibModal(); return; }
+        if (!r){ $("outHint").textContent = "已取消 AI 润色,输出保持本地排版结果"; return; }
+      }
+      showAIProgress("✨ AI 正在润色中…(参考历史公告风格,请稍候)");
+      const r = await aiPolish(plainOut, cfg, prod, aiDelta);
+      const aiText = fixFormatting(repairAILines(unifyPunctuation(cleanText(stripMarkup(r.text))))).text;
+      openDiffDock(basis, aiText, r.issues || []);  // 展示对比坞,由用户勾选接受,输出暂不覆盖
+      $("outHint").textContent = "AI 润色完成 · 请在下方对比区勾选接受修改";
+    }
+    lastBasis = basis;
+    pushHistory(raw);
+    outputEl.value = outText;
+    $("outCount").textContent = countChars(stripMarkup(outText)) + " 字";
+    if (fixEntries.length) $("outHint").textContent += " · 检查 " + fixEntries.length + " 处";
+    renderFixBar();
+    updateWarnBar();
+  }catch(err){
+    console.error(err);
+    toast("处理失败:" + err.message);
+    $("outHint").textContent = "处理失败";
+  }finally{
+    hideAIProgress();
+    optBtn.disabled = false;
+  }
+}
+
+/* 开关实时重渲染:基于最近一次的干净文本,按当前设置立即重新排版(不触发 AI) */
+function rerender(){
+  if (!lastBasis || !lastBasis.trim()) return;
+  const prod = getProduct();
+  const c = chips();
+  let text = lastBasis;
+  weeklyMode = currentTpl === "week" || /例行维护/.test(text);   // 周更公告颜色规范
+  if (c.space) text = addCjkSpaces(text);
+  const blocks = buildBlocks(text);
+  let out;
+  if (currentKind === "mail" || c.plain){
+    out = renderPlain(blocks, prod);
+    $("outHint").textContent = currentKind === "mail" ? "邮件 · 纯文本排版" : "纯文本模式";
+  } else {
+    out = renderRich(blocks, prod, !c.color);
+    $("outHint").textContent = c.color ? "富文本 · 智能上色" : "富文本 · 未上色";
+  }
+  outputEl.value = out;
+  $("outCount").textContent = countChars(stripMarkup(out)) + " 字";
+  updateWarnBar();
+}
+
+function countChars(s){ return s.replace(/\s/g, "").length; }
+
+/* ============ UI 交互 ============ */
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function applyTheme(){
+  document.body.dataset.product = currentProduct;
+}
+function renderLegend(){
+  const prod = getProduct();
+  const map = [
+    { label:"模块标题【新增内容】", key:"colorModule" },
+    { label:"日期公告行", key:"colorDate" },
+    { label:"条目标题(1. xxx)", key:"colorItemHead" },
+    { label:"引导词(活动时间等)", key:"colorGuide" },
+    { label:"强调关键词", key:"colorEmph" }
+  ];
+  let html = "<h4>" + prod.name + " · " + prod.tag + " 重点色图例</h4>";
+  for (const m of map){
+    const k = prod[m.key];
+    html += "<div class=\"lrow\">" +
+      (k ? "<span class=\"swatch\" style=\"background:" + TAG_HEX[k] + "\"></span><span class=\"tag\">&lt;" + k + "&gt;</span>" :
+           "<span class=\"swatch none\"></span><span class=\"tag\">—</span>") +
+      "<span>" + m.label + (k ? "" : "(不上色)") + "</span></div>";
+  }
+  // 周更公告专属规范说明
+  if (prod.key === "qx"){
+    html += '<div class="lrow"><span class="swatch" style="background:#f97316"></span><span class="tag">&lt;O&gt;</span><span>周更公告:模块标题/条目标题</span></div>';
+    html += '<div class="lrow"><span class="swatch" style="background:#16a34a"></span><span class="tag">&lt;G&gt;</span><span>周更公告:活动时间/时间行</span></div>';
+  } else {
+    html += '<div class="lrow"><span class="swatch" style="background:#16a34a"></span><span class="tag">&lt;G&gt;</span><span>时间行(活动时间/时间区间)</span></div>';
+  }
+  $("legendBox").innerHTML = html;
+}
+function buildColorPickers(){
+  document.querySelectorAll(".colorpick[data-cfg]").forEach(el => {
+    el.innerHTML = "";
+    const cfgKey = el.dataset.cfg;
+    COLOR_TAGS.forEach(tag => {
+      const b = document.createElement("span");
+      b.className = "swatch";
+      b.style.background = tag.hex;
+      b.textContent = tag.k;
+      b.title = tag.name;
+      b.dataset.val = tag.k;
+      b.addEventListener("click", () => {
+        el.querySelectorAll(".swatch").forEach(x => x.classList.remove("sel"));
+        b.classList.add("sel");
+      });
+      el.appendChild(b);
+    });
+    const none = document.createElement("span");
+    none.className = "swatch none";
+    none.textContent = "无";
+    none.dataset.val = "";
+    none.addEventListener("click", () => {
+      el.querySelectorAll(".swatch").forEach(x => x.classList.remove("sel"));
+      none.classList.add("sel");
+    });
+    el.appendChild(none);
+    const cur = getProduct()[cfgKey];
+    el.querySelectorAll(".swatch").forEach(x => {
+      if (x.dataset.val === (cur || "")) x.classList.add("sel");
+    });
+  });
+}
+function pickColor(pickEl){
+  const sel = pickEl.querySelector(".swatch.sel");
+  return sel ? sel.dataset.val : "";
+}
+
+prodSeg.addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn || btn.dataset.product === currentProduct) return;
+  currentProduct = btn.dataset.product;
+  prodSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === btn));
+  applyTheme();
+  renderLegend();
+  updatePlaceholder();
+  refreshTemplateForContext();
+  rerender();
+  toast("已切换: " + getProduct().name);
+});
+kindSeg.addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn || btn.dataset.kind === currentKind) return;
+  currentKind = btn.dataset.kind;
+  kindSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === btn));
+  $("chipColor").classList.toggle("disabled", currentKind === "mail");
+  refreshTplChips();
+  refreshTemplateForContext();
+  updatePlaceholder();
+  rerender();
+});
+
+/* chips */
+function bindChip(id){
+  const el = $(id);
+  el.addEventListener("click", () => {
+    if (el.classList.contains("disabled")) return;
+    el.classList.toggle("on");
+    persistChips();
+    rerender();   // 开关切换立即按当前设置重新处理
+  });
+}
+function persistChips(){
+  try{ localStorage.setItem("ggpa_chips_v2", JSON.stringify(chips())); }catch(e){}
+}
+["chipPlain","chipColor","chipSpace"].forEach(bindChip);
+
+$("optBtn").addEventListener("click", optimize);
+$("clearBtn").addEventListener("click", () => {
+  inputEl.value = ""; outputEl.value = "";
+  lastBasis = "";
+  fixEntries = [];
+  clearAIRecords();   // 清空输入/输出时,历史 AI 修改记录一并清空
+  renderFixBar();
+  insertedTpl = "";
+  inputWasEmpty = true;
+  $("inCount").textContent = "0 字";
+  $("outCount").textContent = "0 字";
+  $("outHint").textContent = "等待处理";
+});
+$("clearOutBtn").addEventListener("click", () => {
+  outputEl.value = "";
+  lastBasis = "";
+  fixEntries = [];
+  clearAIRecords();   // 清空输出视为放弃当前版本,历史 AI 修改记录一并清空
+  renderFixBar();
+  $("outCount").textContent = "0 字";
+  $("outHint").textContent = "已清空输出与 AI 修改记录";
+  $("warnBar").hidden = true;
+});
+
+$("copyBtn").addEventListener("click", async () => {
+  const v = outputEl.value;
+  if (!v.trim()){ toast("暂无内容可复制"); return; }
+  try{ await navigator.clipboard.writeText(v); }
+  catch(e){
+    const ta = document.createElement("textarea");
+    ta.value = v;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  toast("已复制到剪贴板");
+});
+$("txtBtn").addEventListener("click", () => {
+  const v = outputEl.value;
+  if (!v.trim()){ toast("暂无内容可下载"); return; }
+  download(new Blob([v], { type:"text/plain;charset=utf-8" }), fileName("txt"));
+});
+$("docxBtn").addEventListener("click", () => {
+  const v = outputEl.value;
+  if (!v.trim()){ toast("请先点击「一键优化」"); return; }
+  const prod = getProduct();
+  let text = unifyPunctuation(cleanText(stripMarkup(v)));
+  if (chips().space) text = addCjkSpaces(text);
+  const blocks = buildBlocks(text);
+  const blob = buildDocx(blocks, prod);
+  download(blob, fileName("docx"));
+  toast("Word 文档已生成");
+});
+function fileName(ext){
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const p = currentProduct === "qx" ? "轻享" : "经典";
+  return (currentKind === "mail" ? "邮件" : "公告") + "_" + p + "_" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "." + ext;
+}
+function download(blob, name){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+let warnTimer = null;
+inputEl.addEventListener("input", () => {
+  $("inCount").textContent = countChars(inputEl.value) + " 字";
+  const empty = !inputEl.value.trim();
+  // 勾选了模板时:输入框由空变为非空(清空后粘贴新内容)自动补全模板
+  if (currentTpl && inputWasEmpty && !empty) insertTemplate(currentTpl);
+  inputWasEmpty = empty;
+});
+outputEl.addEventListener("input", () => {
+  $("outCount").textContent = countChars(stripMarkup(outputEl.value)) + " 字";
+  clearTimeout(warnTimer);
+  warnTimer = setTimeout(updateWarnBar, 400);   // 编辑后防抖重新检查敏感词
+});
+
+/* 公告模板补全(勾选式:勾选插入,取消自动移除) */
+let currentTpl = null;      // 当前勾选的模板 key
+let insertedTpl = "";       // 已插入模板的文本快照(用于取消勾选时精确移除)
+let inputWasEmpty = true;   // 输入框空状态(用于清空后粘贴新内容时自动补全)
+function refreshTplChips(){
+  document.querySelectorAll("[data-tplchip]").forEach(c => {
+    const isMail = c.dataset.tplchip.indexOf("mail") === 0;
+    c.style.display = (currentKind === "mail") === isMail ? "" : "none";
+  });
+  if (currentTpl){
+    const chip = document.querySelector('[data-tplchip="' + currentTpl + '"]');
+    if (!chip || chip.style.display === "none"){
+      removeTemplate();     // 类型切换导致模板失效,同步移除已插入内容
+      currentTpl = null;
+    }
+  }
+  document.querySelectorAll("[data-tplchip]").forEach(c => c.classList.toggle("on", c.dataset.tplchip === currentTpl));
+}
+function insertTemplate(key){
+  let tpl = tplOf(key);
+  const el = inputEl;
+  const cur = el.value.trim();
+  if (cur){
+    const first = cur.split("\n")[0].trim();
+    if (RE_GREET.test(first)){
+      const lines = tpl.split("\n");
+      tpl = lines.slice(1).join("\n");   // 已有称呼行则跳过模板中的称呼
+    }
+    // 模板与正文之间仅单换行,不加空行(与官方格式一致)
+    el.value = tpl + "\n" + cur;
+    insertedTpl = tpl + "\n";
+  } else {
+    el.value = tpl + "\n";   // 末尾换行,便于后续粘贴正文从新行开始
+    insertedTpl = tpl + "\n";
+  }
+  inputWasEmpty = false;
+  el.focus();
+  $("inCount").textContent = countChars(el.value) + " 字";
+}
+function removeTemplate(){
+  if (!insertedTpl) return true;
+  const el = inputEl;
+  let v = el.value;
+  if (v.indexOf(insertedTpl) === 0){
+    v = v.slice(insertedTpl.length).replace(/^\n+/, "");
+  } else if (v.indexOf(insertedTpl) >= 0){
+    v = v.replace(insertedTpl, "").replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "");
+  } else {
+    toast("模板内容已被手动编辑,请手动删除");
+    insertedTpl = "";
+    return false;
+  }
+  el.value = v;
+  insertedTpl = "";
+  inputWasEmpty = !v.trim();
+  $("inCount").textContent = countChars(v) + " 字";
+  return true;
+}
+function applyTemplateChip(key){
+  if (currentTpl === key){
+    const ok = removeTemplate();
+    currentTpl = null;
+    if (ok) toast("已移除模板内容");
+  } else {
+    if (currentTpl) removeTemplate();   // 切换模板:先移除旧模板
+    currentTpl = key;
+    insertTemplate(key);
+    toast("已按「" + TPL_NAMES[key] + "」补全开头语(日期=当天)");
+  }
+  document.querySelectorAll("[data-tplchip]").forEach(c => c.classList.toggle("on", c.dataset.tplchip === currentTpl));
+}
+/* 切换产品/类型时,若勾选了模板,自动按当前产品与当天日期刷新模板内容 */
+function refreshTemplateForContext(){
+  if (!currentTpl) return;
+  const key = currentTpl;
+  removeTemplate();
+  insertTemplate(key);
+  toast("已按当前产品/类型刷新模板内容(日期=当天)");
+}
+document.querySelectorAll("[data-tplchip]").forEach(c => {
+  c.addEventListener("click", () => applyTemplateChip(c.dataset.tplchip));
+});
+
+/* 图例 */
+$("legendBtn").addEventListener("click", e => {
+  e.stopPropagation();
+  $("legendBox").classList.toggle("show");
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest(".legend-wrap")) $("legendBox").classList.remove("show");
+});
+
+/* 文件上传 */
+const dropZone = $("dropZone"), fileInput = $("fileInput");
+dropZone.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", async () => {
+  if (fileInput.files.length) await loadFile(fileInput.files[0]);
+  fileInput.value = "";
+});
+["dragover","dragenter"].forEach(ev => dropZone.addEventListener(ev, e => {
+  e.preventDefault(); dropZone.classList.add("over");
+}));
+["dragleave","drop"].forEach(ev => dropZone.addEventListener(ev, e => {
+  e.preventDefault(); dropZone.classList.remove("over");
+}));
+dropZone.addEventListener("drop", async e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) await loadFile(f);
+});
+async function loadFile(file){
+  try{
+    const text = await readUploadedFile(file);
+    inputEl.value = text;
+    inputWasEmpty = false;
+    $("inCount").textContent = countChars(text) + " 字";
+    toast("已读取 " + file.name + ",共 " + countChars(text) + " 字");
+  }catch(err){
+    console.error(err);
+    toast("读取失败:" + err.message);
+  }
+}
+
+/* 设置弹层 */
+const mask = $("mask");
+$("settingsBtn").addEventListener("click", () => {
+  buildColorPickers();
+  const prod = getProduct();
+  $("settingsSub").textContent = "当前产品:" + prod.name + "(" + prod.tag + ")—— 修改仅对当前产品生效";
+  $("cfgEmphWords").value = prod.emphWords;
+  $("cfgIndent").value = prod.indentSpaces;
+  $("cfgGreeting").value = prod.greeting;
+  $("cfgBlank").checked = prod.keepBlank !== false;
+  $("cfgSensitive").value = getSensitive().join("\n");
+  mask.classList.add("show");
+});
+$("cancelBtn").addEventListener("click", () => mask.classList.remove("show"));
+mask.addEventListener("click", e => { if (e.target === mask) mask.classList.remove("show"); });
+$("resetBtn").addEventListener("click", () => {
+  try{ localStorage.removeItem("ggpa_prod_" + currentProduct); }catch(e){}
+  buildColorPickers();
+  const prod = getProduct();
+  $("cfgEmphWords").value = prod.emphWords;
+  $("cfgIndent").value = prod.indentSpaces;
+  $("cfgGreeting").value = prod.greeting;
+  $("cfgBlank").checked = prod.keepBlank !== false;
+  toast("已恢复 " + prod.name + " 默认设置(保存后生效)");
+});
+$("saveBtn").addEventListener("click", () => {
+  const prod = getProduct();
+  prod.colorModule = pickColor(document.querySelector('[data-cfg="colorModule"]'));
+  prod.colorDate = pickColor(document.querySelector('[data-cfg="colorDate"]'));
+  prod.colorItemHead = pickColor(document.querySelector('[data-cfg="colorItemHead"]'));
+  prod.colorGuide = pickColor(document.querySelector('[data-cfg="colorGuide"]'));
+  prod.colorEmph = pickColor(document.querySelector('[data-cfg="colorEmph"]'));
+  prod.emphWords = $("cfgEmphWords").value.trim();
+  prod.indentSpaces = Math.max(0, parseInt($("cfgIndent").value, 10) || 0);
+  prod.greeting = $("cfgGreeting").value.trim() || DEFAULT_PRODUCTS[currentProduct].greeting;
+  prod.keepBlank = $("cfgBlank").checked;
+  saveProduct(prod);
+  const sens = $("cfgSensitive").value.split("\n").map(s => s.trim()).filter(Boolean);
+  try{ localStorage.setItem("ggpa_sensitive", JSON.stringify(sens)); }catch(e){}
+  mask.classList.remove("show");
+  renderLegend();
+  rerender();
+  updateWarnBar();
+  toast("已保存");
+});
+
+/* ============ AI 润色开关与配置 ============ */
+$("chipAI").addEventListener("click", () => {
+  $("chipAI").classList.toggle("on");
+  const cfg = getAICfg();
+  cfg.enabled = $("chipAI").classList.contains("on");
+  try{ localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg)); }catch(e){}
+  updateAIPolishBtn();
+  if (cfg.enabled){
+    toast(cfg.endpoint && cfg.key ? "已开启 AI 润色" : "已开启 AI 润色,请点 ⚙ 配置接口与 Key");
+  } else {
+    toast("已关闭 AI 润色");
+  }
+});
+/* ============ AI 服务商预设(下拉选择,自动填好接口与模型) ============ */
+const AI_PRESETS = [
+  { id:"deepseek", name:"DeepSeek 官方(推荐,国内直连)", endpoint:"https://api.deepseek.com/chat/completions", model:"deepseek-flash" },
+  { id:"deepseekpro", name:"DeepSeek 官方 · V4 Pro(更强,价格更高)", endpoint:"https://api.deepseek.com/chat/completions", model:"deepseek-v4-pro" },
+  { id:"openai", name:"OpenAI 官方", endpoint:"https://api.openai.com/v1/chat/completions", model:"gpt-4o-mini" },
+  { id:"zhipu", name:"智谱 GLM 官方", endpoint:"https://open.bigmodel.cn/api/paas/v4/chat/completions", model:"glm-4-flash" },
+  { id:"qwen", name:"阿里云百炼 · 通义千问", endpoint:"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", model:"qwen-plus" },
+  { id:"moonshot", name:"月之暗面 Kimi", endpoint:"https://api.moonshot.cn/v1/chat/completions", model:"moonshot-v1-8k" },
+  { id:"siliconflow", name:"硅基流动(聚合平台)", endpoint:"https://api.siliconflow.cn/v1/chat/completions", model:"deepseek-ai/DeepSeek-V3" },
+  { id:"custom", name:"自定义(手动填写接口地址与模型)", endpoint:"", model:"" }
+];
+function applyAIProvider(id, cfg){
+  const p = AI_PRESETS.find(x => x.id === id) || AI_PRESETS[AI_PRESETS.length - 1];
+  const isCustom = p.id === "custom";
+  $("aiEndpoint").readOnly = !isCustom;
+  $("aiModel").readOnly = !isCustom;
+  if (isCustom){
+    $("aiEndpoint").value = cfg.endpoint || "";
+    $("aiModel").value = cfg.model || "";
+  } else {
+    $("aiEndpoint").value = p.endpoint;
+    $("aiModel").value = p.model;
+  }
+}
+function fillAIProviderSelect(cfg){
+  const sel = $("aiProvider");
+  sel.innerHTML = AI_PRESETS.map(p => '<option value="' + p.id + '">' + p.name + "</option>").join("");
+  const cur = (cfg.provider && AI_PRESETS.some(p => p.id === cfg.provider)) ? cfg.provider : (cfg.endpoint ? "custom" : "deepseek");
+  sel.value = cur;
+  applyAIProvider(cur, cfg);
+}
+$("aiProvider").addEventListener("change", () => applyAIProvider($("aiProvider").value, getAICfg()));
+
+$("aiSettingsBtn").addEventListener("click", () => {
+  const cfg = getAICfg();
+  $("aiKey").value = cfg.key || "";
+  fillAIProviderSelect(cfg);
+  $("aiStyleRef").value = getStyleRef();
+  updateStyleInfo();
+  document.querySelectorAll('input[name="styleMode"]').forEach(r => { r.checked = (r.value === getStyleMode()); });
+  $("aiMask").classList.add("show");
+});
+$("aiCancelBtn").addEventListener("click", () => $("aiMask").classList.remove("show"));
+$("aiMask").addEventListener("click", e => { if (e.target === $("aiMask")) $("aiMask").classList.remove("show"); });
+$("aiSaveBtn").addEventListener("click", () => {
+  const cfg = getAICfg();
+  const rawEp = $("aiEndpoint").value.trim();
+  const normEp = normalizeEndpoint(rawEp);
+  cfg.provider = $("aiProvider").value;
+  cfg.endpoint = normEp;
+  cfg.model = $("aiModel").value.trim();
+  cfg.key = $("aiKey").value.trim();
+  try{ localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg)); }catch(e){}
+  const ref = $("aiStyleRef").value.trim();
+  try{ localStorage.setItem("ggpa_style_ref", ref.slice(0, 4000)); }catch(e){}
+  const modeEl = document.querySelector('input[name="styleMode"]:checked');
+  try{ localStorage.setItem("ggpa_style_mode", modeEl ? modeEl.value : "smart"); }catch(e){}
+  updateAIPolishBtn();
+  $("aiMask").classList.remove("show");
+  toast("AI 配置已保存" + (normEp !== rawEp ? "(接口地址已自动补全为 " + normEp + ")" : "") + (ref ? "(含 " + ref.length + " 字风格样本)" : ""));
+});
+
+/* 示例 */
+function sampleFor(){
+  if (currentKind === "mail") return tplOf("mailFix");
+  if (currentProduct === "qx"){
+    return "致神州道友：\n为给各位道友带来更好的游戏体验，《梦幻新诛仙：轻享》将于9月16日6:30-7:30进行例行维护。本次维护将带来全新外观及多项功能优化与问题修复，具体更新内容如下：\n\n【新增内容】\n1. 全新「情缘系统」上线\n与心仪的道友结为情缘，携手同游神州！\n上线时间：9月16日维护后\n\n【优化内容】\n1. 为给各位道友更轻松的游戏体验，本次更新进行了如下减负优化：\n- 普通难度天帝剑阁中付瑶光必定出现护灵或护体赐福词条。\n- 提高了仙师试炼中仙师的刷新数量。\n- 优化了帮派夺旗的时间：最晚入场时间调整为20：30，开战时间保持不变。\n\n2. 仙师试炼优化：对战中的仙师头顶增加战斗标识。\n\n【修复内容】\n1. 修复了烽火连光·夜坐骑颜色显示异常的问题。\n2. 修复了帮派夺旗玩法在特殊情况下封印命中异常的问题。";
+  }
+  return "致神州道友：\n为给诸位仙盟道友带来更好的游戏体验，《梦幻新诛仙》于9月3日7:00-8:00进行例行维护，本次更新公告详情如下：\n\n【新增内容】\n1. 全新「设计站」上线，秀出你的潮流灵感！\n霓裳界面、捏脸界面中新增「设计站」入口，整搭、易容等道友作品汇聚一堂。找穿搭、学捏脸、一站搞定！\n上线时间：9月3日维护后\n功能入口：点击外观界面，右侧「设计站」按钮，点击即可进入\n\n2. 育灵报喜，养成钜惠\n活动时间：9月3日维护后-9月30日\n活动规则：\n- 活动期间参与灵兽命格、启灵，仙灵修行养成，可得育灵积分。\n- 育灵积分达到一定条件，可领取臻品果脯宝匣、灵融果等奖励。\n\n【优化和修复内容】\n1. 修复在进行灵兽合成洗髓时保存异常的问题\n2. 增加「云顶天宫」连战场次\n\n【霸气星期五】\n本周霸气星期五免单来袭\n活动时间：9月4日";
+}
+$("sampleBtn").addEventListener("click", () => {
+  inputEl.value = sampleFor();
+  inputWasEmpty = false;
+  $("inCount").textContent = countChars(inputEl.value) + " 字";
+  toast("已填入示例,点击「一键优化」查看效果");
+});
+
+/* ============ 历史记录(最近 10 条) ============ */
+const HISTORY_KEY = "ggpa_history";
+function loadHistory(){
+  try{ const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); return Array.isArray(arr) ? arr : []; }catch(e){ return []; }
+}
+function saveHistory(list){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }catch(e){}
+}
+function pushHistory(text){
+  if (!text || !text.trim()) return;
+  let list = loadHistory().filter(h => h.text !== text);
+  list.unshift({ text, product: currentProduct, kind: currentKind, time: Date.now() });
+  if (list.length > 10) list.length = 10;
+  saveHistory(list);
+}
+function renderHistory(){
+  const list = loadHistory();
+  const box = $("historyList");
+  if (!list.length){
+    box.innerHTML = '<div class="hitem" style="color:var(--sub);cursor:default;">暂无历史记录(优化成功后自动保存)</div>';
+    return;
+  }
+  const pad = n => String(n).padStart(2, "0");
+  box.innerHTML = list.map((h, i) => {
+    const d = new Date(h.time);
+    const ts = (d.getMonth() + 1) + "月" + d.getDate() + "日 " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+    return '<div class="hitem" data-i="' + i + '">' +
+      '<div class="hmeta"><span class="hbadge">' + (h.product === "qx" ? "轻享" : "经典") + '</span>' +
+      '<span class="hbadge kind">' + (h.kind === "mail" ? "邮件" : "公告") + '</span>' +
+      '<span class="htime">' + ts + '</span></div>' +
+      '<div class="hprev">' + esc(h.text.replace(/\s+/g, " ").slice(0, 60)) + '</div>' +
+      '<button class="hdel" data-i="' + i + '" title="删除">✕</button></div>';
+  }).join("");
+}
+function restoreHistory(i){
+  const list = loadHistory();
+  const h = list[i];
+  if (!h) return;
+  if (h.product === "zx" || h.product === "qx") currentProduct = h.product;
+  if (h.kind === "announcement" || h.kind === "mail") currentKind = h.kind;
+  prodSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.product === currentProduct));
+  kindSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.kind === currentKind));
+  $("chipColor").classList.toggle("disabled", currentKind === "mail");
+  currentTpl = null;
+  insertedTpl = "";
+  refreshTplChips();
+  applyTheme();
+  renderLegend();
+  updatePlaceholder();
+  inputEl.value = h.text;
+  inputWasEmpty = false;
+  $("inCount").textContent = countChars(h.text) + " 字";
+  $("historyMask").classList.remove("show");
+  toast("已恢复历史记录(" + (h.product === "qx" ? "轻享" : "经典") + " · " + (h.kind === "mail" ? "邮件" : "公告") + ")");
+}
+$("historyBtn").addEventListener("click", () => { renderHistory(); $("historyMask").classList.add("show"); });
+$("historyCloseBtn").addEventListener("click", () => $("historyMask").classList.remove("show"));
+$("historyMask").addEventListener("click", e => { if (e.target === $("historyMask")) $("historyMask").classList.remove("show"); });
+$("historyClearBtn").addEventListener("click", () => { saveHistory([]); renderHistory(); toast("历史已清空"); });
+$("historyList").addEventListener("click", e => {
+  const del = e.target.closest(".hdel");
+  if (del){
+    const i = +del.dataset.i;
+    const list = loadHistory();
+    list.splice(i, 1);
+    saveHistory(list);
+    renderHistory();
+    return;
+  }
+  const item = e.target.closest(".hitem");
+  if (item) restoreHistory(+item.dataset.i);
+});
+
+/* ============ 敏感词检查 ============ */
+const DEFAULT_SENSITIVE = ["赌博","博彩","赌场","色情","裸聊","诈骗","传销","洗钱","高利贷","裸贷","枪支","军火","弹药","毒品","冰毒","大麻","邪教","法轮功","台独","港独","暴恐","恐怖袭击","反动","颠覆国家","自杀","杀人","代开发票","办证","刻章","刷单","外挂","私服","代练","木马","病毒链接"];
+function getSensitive(){
+  try{
+    const s = localStorage.getItem("ggpa_sensitive");
+    if (s !== null){
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
+  }catch(e){}
+  return DEFAULT_SENSITIVE.slice();
+}
+function checkSensitive(text){
+  const words = getSensitive();
+  const hits = [];
+  for (const w of words){
+    if (w && text.indexOf(w) >= 0 && hits.indexOf(w) < 0) hits.push(w);
+  }
+  return hits;
+}
+function updateWarnBar(){
+  const hits = checkSensitive(stripMarkup(outputEl.value));
+  const bar = $("warnBar");
+  if (hits.length){
+    bar.hidden = false;
+    bar.innerHTML = "⚠ 检测到敏感词:" + hits.map(w => "<b>" + esc(w) + "</b>").join("、") + "(可在「排版设置」中维护词表)";
+  } else {
+    bar.hidden = true;
+  }
+}
+
+/* ============ 排版检查报告条 ============ */
+function renderFixBar(){
+  const bar = $("fixBar");
+  if (!fixEntries.length){ bar.hidden = true; bar.dataset.open = ""; return; }
+  bar.hidden = false;
+  const open = bar.dataset.open === "1";
+  const aiN = fixEntries.filter(x => x.cat === "ai").length;
+  const shown = fixEntries.slice(0, 100);
+  bar.innerHTML = '<div class="fixpanel-head"><span>🔍 排版与内容检查:' + fixEntries.length + " 处" + (aiN ? "(含 AI " + aiN + " 处)" : "") + '</span><span class="fixarrow">' + (open ? "▾ 收起" : "▸ 展开") + "</span></div>" +
+    (open
+      ? '<div class="fixpanel-body">' + shown.map(x => {
+          const tag = x.cat === "ai" ? "AI" : x.cat === "check" ? "检测" : "修正";
+          const m = /行(\d+)/.exec(x.text);
+          const ln = (typeof x.line === "number" && x.line > 0) ? x.line : (m ? +m[1] : 0);
+          return '<div class="fixrow' + (ln ? " clickable" : "") + '"' + (ln ? ' data-line="' + ln + '"' : "") + '><span class="tag ' + (x.cat === "ai" ? "ai" : x.cat === "check" ? "check" : "fmt") + '">' + tag + '</span><span class="fixtxt">' + esc(x.text) + "</span></div>";
+        }).join("") + (fixEntries.length > 100 ? '<div class="fixrow"><span class="fixtxt">…其余 ' + (fixEntries.length - 100) + " 处已省略</span></div>" : "") + "</div>"
+      : "");
+  const h = bar.querySelector(".fixpanel-head");
+  if (h) h.addEventListener("click", () => {
+    bar.dataset.open = open ? "0" : "1";
+    renderFixBar();
+  });
+}
+$("fixBar").addEventListener("click", e => {
+  const t = e.target.closest("[data-line]");
+  if (t) gotoOutputLine(+t.dataset.line);
+});
+function gotoOutputLine(n){
+  const ta = outputEl;
+  const rich = !(currentKind === "mail" || chips().plain);
+  const ln = n + (rich ? 1 : 0);   // 富文本输出首行是 <item><text> 包装行
+  const lines = ta.value.split("\n");
+  if (ln < 1 || ln > lines.length) return;
+  let start = 0;
+  for (let i = 0; i < ln - 1; i++) start += lines[i].length + 1;
+  const line = lines[ln - 1] || "";
+  // 让浏览器按光标位置自动滚动(最准确,避免手动像素计算偏差)
+  ta.focus({ preventScroll: true });
+  ta.setSelectionRange(start, start + line.length);
+  ta.blur();
+  ta.focus();
+}
+
+/* 全局脚本错误提示:任何未捕获异常都会弹提示,便于反馈 */
+window.addEventListener("error", e => {
+  try{
+    if (e && e.message && e.message.indexOf("ResizeObserver") < 0){
+      toast("运行错误: " + e.message);
+    }
+  }catch(_){}
+});
+
+/* ============ AI 深度润色与对比坞(参考历史公告风格) ============ */
+let diffRecords = [];     // AI 修改记录 [{id,time,before,after,issues,ops,accepted,collapsed,applied,reverted,merged,summary}]
+let activeRecordId = null; // 当前对比坞展示的记录 id
+let diffState = null;      // 指向当前展示的记录(与 diffRecords 中同一对象)
+let dockTops = null;       // 对比坞右侧各行顶部偏移(换行后动态计算)
+const DOCK_LINE_H = 23.4;
+
+/* 行级差异(LCS),返回 [{type:"eq",line}|{type:"change",del[],add[]}] */
+function diffLines(a, b){
+  const n = a.length, m = b.length;
+  if (n === 0 && m === 0) return [];
+  if (n > 250 || m > 250){
+    return a.join("\n") === b.join("\n") ? [] : [{ type:"change", del:a.slice(), add:b.slice() }];
+  }
+  const W = m + 1;
+  const dp = new Uint16Array((n + 1) * W);
+  for (let i = n - 1; i >= 0; i--){
+    for (let j = m - 1; j >= 0; j--){
+      dp[i * W + j] = a[i] === b[j] ? dp[(i + 1) * W + j + 1] + 1 : Math.max(dp[(i + 1) * W + j], dp[i * W + j + 1]);
+    }
+  }
+  const ops = [];
+  let i = 0, j = 0;
+  while (i < n || j < m){
+    if (i < n && j < m && a[i] === b[j]){
+      ops.push({ type:"eq", line:a[i] });
+      i++; j++;
+      continue;
+    }
+    const del = [], add = [];
+    while (i < n && j < m && a[i] !== b[j]){
+      if (dp[(i + 1) * W + j] >= dp[i * W + j + 1]){ del.push(a[i]); i++; }
+      else { add.push(b[j]); j++; }
+    }
+    while (i >= n && j < m){ add.push(b[j]); j++; }
+    while (j >= m && i < n){ del.push(a[i]); i++; }
+    ops.push({ type:"change", del, add });
+  }
+  return ops;
+}
+function updateAIPolishBtn(){
+  const cfg = getAICfg();
+  const ok = !!(cfg.endpoint && cfg.key);
+  $("aiPolishBtn").disabled = !ok;
+  $("aiPolishBtn").title = ok ? "参考历史公告风格,深度润色输出内容并检查表达/内容问题"
+    : (SHARED_AI.enabled && SHARED_AI.hideConfig ? "管理员尚未在源码后台配置区填写团队共享 API Key" : "需先在 ⚙ 中配置 AI 接口与 Key 后使用");
+}
+$("aiPolishBtn").addEventListener("click", async () => {
+  const cfg = getAICfg();
+  if (!cfg.endpoint || !cfg.key){ toast("请先配置 AI 接口,点 ⚙ 完成配置"); $("aiSettingsBtn").click(); return; }
+  const v = outputEl.value;
+  if (!v.trim()){ toast("请先点击「一键优化」生成内容"); return; }
+  const prod = getProduct();
+  let plain = unifyPunctuation(cleanText(stripMarkup(v)));
+  plain = renderPlain(buildBlocks(plain), prod);
+  if (!(await hasStyleCorpus())){
+    const r = await confirmDialog(STYLE_CORPUS_CONFIRM, "继续润色", "去配置参考库");
+    if (r === "config"){ openLibModal(); return; }
+    if (!r) return;
+  }
+  $("aiPolishBtn").disabled = true;
+  $("aiPolishBtn").textContent = "⏳ 润色中…";
+  showAIProgress("✨ AI 深度润色中…(已载入参考语料,等待模型生成)");
+  try{
+    const r = await aiDeepPolish(plain, cfg, prod, aiDelta);
+    const aiText = repairAILines(unifyPunctuation(cleanText(stripMarkup(r.text))));
+    openDiffDock(plain, aiText, r.issues || []);
+  }catch(err){
+    console.error(err);
+    toast("AI 润色失败:" + err.message);
+  }finally{
+    hideAIProgress();
+    $("aiPolishBtn").textContent = "✨ AI 深度润色";
+    updateAIPolishBtn();
+  }
+});
+function openDiffDock(beforeText, afterText, issues){
+  const ops = diffLines(beforeText.split("\n"), afterText.split("\n"));
+  const accepted = new Set();
+  const collapsed = new Set();   // 保留字段(兼容历史记录),当前所有修改默认全部展开、不折叠
+  ops.forEach((o, i) => {
+    if (o.type === "change") accepted.add(i);
+  });
+  const rec = {
+    id: Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    time: Date.now(),
+    before: beforeText, after: afterText, issues: issues || [],
+    ops, accepted, collapsed,
+    applied: false, reverted: false, merged: null,
+    summary: (beforeText.split("\n")[0] || "").slice(0, 30)
+  };
+  diffRecords.push(rec);
+  if (diffRecords.length > 20) diffRecords.shift();
+  activeRecordId = rec.id;
+  diffState = rec;
+  $("diffDock").hidden = false;   // 先显示再渲染,保证行高测量有效
+  renderDiffDock();
+  $("recBtn").disabled = false;
+  toast("AI 润色完成,请在下方对比区勾选接受修改");
+  $("diffDock").scrollIntoView({ behavior:"smooth", block:"nearest" });
+  saveRecords();
+}
+function rowHTML(cls, rowIdx, num, text, title){
+  return '<div class="drow ' + cls + '" data-row="' + rowIdx + '" title="' + esc(title || text || "") + '">' +
+    '<span class="ln">' + (num || " ") + "</span>" +
+    '<span class="dt">' + esc(text || "") + "</span></div>";
+}
+function chgRowHTML(rowIdx, num, dl, on){
+  return '<div class="drow chg' + (on ? "" : " off") + '" data-row="' + rowIdx + '">' +
+    '<span class="ln">' + (num || " ") + "</span>" +
+    '<span class="dt">' + esc(dl || "▲ 此处为新增内容") + "</span></div>";
+}
+/* 对比视图渲染出错时,把错误显示在第三栏并提示,便于定位 */
+function showDockError(err){
+  const msg = String((err && err.message) || err || "未知错误");
+  console.error(err);
+  const gutter = $("diffGutter");
+  if (gutter){
+    gutter.innerHTML = '<div class="ginner"><div class="gmark empty" style="top:10px;">⚠ 对比视图渲染出错: ' + esc(msg) + "<br>请截图反馈此信息</div></div>";
+  }
+  toast("对比视图渲染出错:" + msg);
+}
+function renderDiffDock(){
+  if (!diffState) return;
+  try{
+    renderDiffDockInner();
+  }catch(err){
+    showDockError(err);
+  }
+}
+function renderDiffDockInner(){
+  if (!diffState) return;
+  const { after, ops, accepted } = diffState;
+  const L = $("dockLeft"), R = $("dockRight");
+  const lScroll = L.scrollTop, rScroll = R.scrollTop;
+  const aiRow = new Array(after.length + 1).fill(0);
+  const left = [], right = [], opMeta = [];
+  let ai = 0, row = 0, bLine = 0;
+  ops.forEach((o, oi) => {
+    if (o.type === "eq"){
+      opMeta.push({ type:"eq" });
+      bLine++;
+      left.push(rowHTML("eq", row, bLine, o.line, o.line));
+      right.push(rowHTML("eq", row, ai + 1, o.line, o.line));
+      aiRow[ai] = row; ai++; row++;
+      return;
+    }
+    opMeta.push({ type:"change", oi, ln: ai + 1, del: o.del.slice(), add: o.add.slice() });
+    const n = Math.max(o.del.length, o.add.length);
+    const on = accepted.has(oi);
+    for (let k = 0; k < n; k++){
+      const dl = k < o.del.length ? o.del[k] : "";
+      const al = k < o.add.length ? o.add[k] : "";
+      if (dl) bLine++;
+      if (k === 0){
+        left.push(chgRowHTML(row, dl ? bLine : "", dl, on));
+      } else {
+        left.push(rowHTML("del" + (on ? "" : " off"), row, bLine, dl, dl));
+      }
+      right.push(rowHTML("add" + (on ? "" : " off"), row, al ? ai + 1 : "", al, al));
+      if (k < o.add.length){ aiRow[ai] = row; ai++; }
+      row++;
+    }
+  });
+  // 合并相邻的连续修改为一张卡片,避免第三栏卡片相互覆盖
+  const blockInfo = [];
+  for (let i = 0; i < opMeta.length; i++){
+    const m = opMeta[i];
+    if (m.type !== "change") continue;
+    let del = m.del.slice(), add = m.add.slice(), ois = [m.oi], lines = 1;
+    while (i + 1 < opMeta.length && opMeta[i + 1].type === "change"){
+      i++;
+      del = del.concat(opMeta[i].del);
+      add = add.concat(opMeta[i].add);
+      ois.push(opMeta[i].oi);
+      lines++;
+    }
+    blockInfo.push({ ois, ln: m.ln, del: del.join(" / "), add: add.join(" / "), lines });
+  }
+  L.innerHTML = left.join("");
+  R.innerHTML = right.join("");
+  dockTops = equalizeDockRows();          // 左右同行等高(换行后动态计算),保证逐行对齐
+  L.scrollTop = lScroll; R.scrollTop = rScroll;
+  const total = ops.filter(o => o.type === "change").length;
+  const isActive = diffRecords.length && diffRecords[diffRecords.length - 1] === diffState;
+  $("dockInfo").textContent = total + " 处修改 · 已勾选 " + accepted.size + " 处" + (isActive ? "" : "(历史记录,仅查看)");
+  $("dockApplyBtn").disabled = !isActive;
+  $("dockUndoBtn").disabled = !isActive;
+  $("dockAllBtn").disabled = !isActive;
+  $("dockNoneBtn").disabled = !isActive;
+  renderDockGutter(diffState.issues, after.split("\n"), aiRow, dockTops, blockInfo);
+  saveRecords();
+}
+/* 左右两栏同序号行取最大高度,并返回每行顶部偏移(被过滤隐藏的行高度为 0) */
+function equalizeDockRows(){
+  const L = $("dockLeft").querySelectorAll(".drow");
+  const R = $("dockRight").querySelectorAll(".drow");
+  const n = Math.min(L.length, R.length);
+  const tops = [];
+  let top = 0;
+  for (let i = 0; i < n; i++){
+    const h = Math.max(L[i].offsetHeight || 0, R[i].offsetHeight || 0);
+    if (h > 0){
+      L[i].style.height = h + "px";
+      R[i].style.height = h + "px";
+    }
+    tops.push(top);
+    top += h;
+  }
+  for (let i = n; i < R.length; i++){ tops.push(top); top += (R[i].offsetHeight || 0); }
+  return { tops, total: top };
+}
+function toggleDiffBlocks(ois){
+  if (!diffState) return;
+  (ois || []).forEach(oi => {
+    if (diffState.accepted.has(oi)) diffState.accepted.delete(oi);
+    else diffState.accepted.add(oi);
+  });
+  renderDiffDock();
+}
+$("dockFilterBtn").addEventListener("click", () => {
+  const filtered = $("diffDock").classList.toggle("filtered");
+  $("dockFilterBtn").textContent = filtered ? "📖 显示全部" : "👁 只看修改";
+  renderDiffDock();
+});
+/* AI 修改记录持久化(刷新页面后仍可查看/撤回) */
+function clearAIRecords(){
+  diffRecords = [];
+  activeRecordId = null;
+  diffState = null;
+  $("diffDock").hidden = true;
+  $("recBtn").disabled = true;
+  $("dockUndoBtn").disabled = true;
+  try{ localStorage.removeItem("ggpa_ai_records"); }catch(e){}
+}
+function saveRecords(){
+  try{
+    localStorage.setItem("ggpa_ai_records", JSON.stringify(diffRecords.map(r => ({
+      id:r.id, time:r.time, before:r.before, after:r.after, issues:r.issues, ops:r.ops,
+      accepted:Array.from(r.accepted || []), collapsed:Array.from(r.collapsed || []),
+      applied:!!r.applied, reverted:!!r.reverted, merged:r.merged || null, summary:r.summary || ""
+    }))));
+  }catch(e){}
+}
+function loadRecords(){
+  try{
+    const arr = JSON.parse(localStorage.getItem("ggpa_ai_records") || "null");
+    if (Array.isArray(arr)){
+      diffRecords = arr.filter(s => s && typeof s.before === "string" && typeof s.after === "string" && Array.isArray(s.ops)).map(s => ({
+        id:s.id, time:s.time, before:s.before, after:s.after, issues:Array.isArray(s.issues) ? s.issues : [],
+        ops:s.ops, accepted:new Set(Array.isArray(s.accepted) ? s.accepted : []),
+        collapsed:new Set(Array.isArray(s.collapsed) ? s.collapsed : []),
+        applied:!!s.applied, reverted:!!s.reverted, merged:s.merged || null, summary:s.summary || ""
+      }));
+      return diffRecords.length > 0;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* 解析 AI 问题定位到行号(仅当 pos 本身是行号引用时才取数字,避免把日期误当行号) */
+function issueLine(pos, text){
+  if (!pos) return 0;
+  const s = String(pos).trim();
+  const m = /^(?:第|行|L)?\s*(\d{1,4})\s*(?:行|L)?\s*$/.exec(s);
+  if (m){
+    const n = +m[1];
+    if (n >= 1 && n <= 2000) return n;
+  }
+  if (s.length >= 2){
+    const i = text.indexOf(s);
+    if (i >= 0) return text.slice(0, i).split("\n").length;
+  }
+  return 0;
+}
+/* 两版对比差异摘要:去掉两端相同的部分,只保留差异片段,避免"看起来没变化" */
+function clipFrag(s){ return s.length > 14 ? s.slice(0, 14) + "…" : s; }
+function diffSummary(del, add){
+  del = (del || "").replace(/\s+/g, " ").trim();
+  add = (add || "").replace(/\s+/g, " ").trim();
+  if (!del && !add) return { del:"(无)", add:"(无)", kind:"same" };
+  if (!del) return { del:"(无)", add: clipFrag(add), kind:"insert" };
+  if (!add) return { del: clipFrag(del), add:"(删除)", kind:"delete" };
+  if (del === add) return { del: clipFrag(del), add:"(与原文一致)", kind:"same" };
+  let s = 0;
+  while (s < del.length && s < add.length && del[s] === add[s]) s++;
+  let e1 = del.length, e2 = add.length;
+  while (e1 > s && e2 > s && del[e1 - 1] === add[e2 - 1]){ e1--; e2--; }
+  const pre = s > 0 ? "…" : "";
+  const post = (e1 < del.length || e2 < add.length) ? "…" : "";
+  return { del: pre + clipFrag(del.slice(s, e1)) + post, add: pre + clipFrag(add.slice(s, e2)) + post, kind:"change" };
+}
+/* 第三栏:每处修改一张"接受修改"卡片(勾选框 + 两版对比说明 + 该行 AI 问题) */
+function renderDockGutter(issues, afterLines, aiRow, topsInfo, blockInfo){
+  const gutter = $("diffGutter");
+  gutter.innerHTML = "";
+  const lines = Array.isArray(afterLines) ? afterLines : String(afterLines || "").split("\n");
+  const padTop = 10;
+  const tops = topsInfo ? topsInfo.tops : [];
+  const total = topsInfo ? topsInfo.total : lines.length * DOCK_LINE_H;
+  const text = lines.join("\n");
+  const maxLine = Math.max(1, lines.length);
+  const inner = document.createElement("div");
+  inner.className = "ginner";
+  inner.style.height = Math.max(padTop + total, 380) + "px";
+  const perRow = {};
+  // AI 问题按显示行分组(优先并入修改卡片,其余独立红标)
+  const issueByRow = {};
+  (issues || []).forEach(x => {
+    const ln = Math.min(issueLine(x.pos, text) || 1, maxLine);
+    const rowIdx = aiRow[ln - 1] || 0;
+    (issueByRow[rowIdx] = issueByRow[rowIdx] || []).push({ ln, x });
+  });
+  // 修改卡片(相邻连续修改已合并;用游标向下堆叠,绝不相互覆盖)
+  const allOn = b => b.ois.every(oi => diffState && diffState.accepted.has(oi));
+  let cursor = 0;
+  (blockInfo || []).forEach(b => {
+    const ln = Math.min(b.ln || 1, maxLine);
+    const rowIdx = aiRow[ln - 1] || 0;
+    const rowTop = padTop + (tops[rowIdx] != null ? tops[rowIdx] : rowIdx * DOCK_LINE_H);
+    const top = Math.max(rowTop, cursor);
+    const sum = diffSummary(b.del, b.add);
+    const its = issueByRow[rowIdx] || [];
+    if (its.length) delete issueByRow[rowIdx];
+    const linesNote = (b.lines || 1) > 1 ? '<div class="gdiff">本处合并了连续 ' + b.lines + ' 处修改(完整内容见左右两栏)</div>' : "";
+    const issueHtml = its.length
+      ? its.map(t => '<div class="gissue">⚠ L' + t.ln + " " + esc(t.x.problem || "") + (t.x.fix ? " → " + esc(t.x.fix) : "") + "</div>").join("")
+      : "";
+    const el = document.createElement("div");
+    el.className = "gcheck";
+    el.style.top = top + "px";
+    el.innerHTML = '<div class="ghead"><label class="gchk"><input type="checkbox"' + (allOn(b) ? " checked" : "") + "> 接受修改</label>" +
+      '<span class="gloc" title="定位到该行">📍</span></div>' +
+      '<div class="gdiff">原文:<b>' + esc(sum.del) + "</b></div>" +
+      '<div class="gdiff">优化:<b>' + esc(sum.add) + "</b></div>" + linesNote + issueHtml;
+    const cb = el.querySelector("input");
+    if (cb) cb.addEventListener("change", () => toggleDiffBlocks(b.ois));
+    el.addEventListener("click", e => {
+      if (e.target.closest(".gloc")){ gotoDockRow(rowIdx, el); return; }
+      if (e.target.closest(".gchk")) return;   // 勾选框由 change 事件处理,避免重复切换
+      toggleDiffBlocks(b.ois);
+    });
+    inner.appendChild(el);
+    cursor = top + (el.offsetHeight || 72) + 6;
+  });
+  // 未落在修改卡片上的 AI 问题,独立红标(同样用游标防重叠)
+  for (const rowIdx in issueByRow){
+    const its = issueByRow[rowIdx];
+    const rowTop = padTop + (tops[rowIdx] != null ? tops[rowIdx] : rowIdx * DOCK_LINE_H);
+    its.forEach(t => {
+      const top = Math.max(rowTop, cursor);
+      const el = document.createElement("div");
+      el.className = "gmark";
+      el.style.top = top + "px";
+      el.textContent = "L" + t.ln + " " + (t.x.problem || "") + (t.x.fix ? " → " + t.x.fix : "");
+      el.title = el.textContent;
+      el.addEventListener("click", () => gotoDockRow(+rowIdx, el));
+      inner.appendChild(el);
+      cursor = top + 28;
+    });
+  }
+  if ((!blockInfo || !blockInfo.length) && (!issues || !issues.length)){
+    const el = document.createElement("div");
+    el.className = "gmark empty";
+    el.style.top = "10px";
+    el.textContent = "本次没有内容修改,AI 未发现问题";
+    inner.appendChild(el);
+  }
+  gutter.appendChild(inner);
+}
+function gotoDockRow(rowIdx, markEl){
+  const top = dockTops && dockTops.tops && dockTops.tops[rowIdx] != null ? dockTops.tops[rowIdx] : rowIdx * DOCK_LINE_H;
+  const target = Math.max(0, top - 40);
+  $("dockLeft").scrollTop = target;
+  $("dockRight").scrollTop = target;
+  $("diffGutter").scrollTop = target;
+  document.querySelectorAll("#diffGutter .gmark, #diffGutter .gcheck").forEach(g => g.classList.remove("active"));
+  if (markEl) markEl.classList.add("active");
+  document.querySelectorAll("#dockRight .drow").forEach(d => d.classList.remove("active"));
+  const r = $("dockRight").querySelector('.drow[data-row="' + rowIdx + '"]');
+  if (r) r.classList.add("active");
+}
+/* 悬停一行,另一栏同行同步高亮,方便对比 */
+(function bindDockHover(){
+  function over(e){
+    const row = e.target.closest(".drow");
+    if (!row || !row.dataset.row) return;
+    const r = row.dataset.row;
+    document.querySelectorAll('#dockLeft .drow[data-row="' + r + '"], #dockRight .drow[data-row="' + r + '"]').forEach(d => d.classList.add("hover"));
+  }
+  function out(e){
+    if (!e.target.closest(".drow")) return;
+    document.querySelectorAll("#dockLeft .drow.hover, #dockRight .drow.hover").forEach(d => d.classList.remove("hover"));
+  }
+  $("dockLeft").addEventListener("mouseover", over);
+  $("dockRight").addEventListener("mouseover", over);
+  $("dockLeft").addEventListener("mouseout", out);
+  $("dockRight").addEventListener("mouseout", out);
+})();
+/* 左右栏与标注窗滚动同步 */
+(function bindDockScroll(){
+  const L = $("dockLeft"), R = $("dockRight"), G = $("diffGutter");
+  let lock = false;
+  function sync(from){
+    if (lock) return;
+    lock = true;
+    const v = from.scrollTop;
+    if (L !== from) L.scrollTop = v;
+    if (R !== from) R.scrollTop = v;
+    G.scrollTop = v;
+    setTimeout(() => { lock = false; }, 0);
+  }
+  [L, R, G].forEach(el => el.addEventListener("scroll", () => sync(el)));
+})();
+/* 应用勾选的修改;未勾选的保持原文 */
+function applyAcceptedDiff(){
+  if (!diffState) return;
+  if (diffRecords.length && diffRecords[diffRecords.length - 1] !== diffState){
+    toast("这是历史记录,仅支持查看,不能再次应用");
+    return;
+  }
+  const out = [];
+  diffState.ops.forEach((o, oi) => {
+    if (o.type === "eq") out.push(o.line);
+    else if (diffState.accepted.has(oi)) o.add.forEach(l => out.push(l));
+    else o.del.forEach(l => out.push(l));
+  });
+  lastBasis = out.join("\n");
+  rerender();
+  diffState.applied = true;
+  diffState.reverted = false;
+  diffState.merged = lastBasis;
+  if (diffState.issues && diffState.issues.length){
+    const aiIssues = diffState.issues.map(x => ({ cat:"ai", text:"[" + (x.pos || "—") + "] " + (x.problem || "") + (x.fix ? " → " + x.fix : "") }));
+    fixEntries = fixEntries.filter(f => f.cat !== "ai").concat(aiIssues);
+  }
+  renderFixBar();
+  updateWarnBar();
+  const n = diffState.accepted.size;
+  $("diffDock").hidden = true;
+  $("outHint").textContent = "已应用 " + n + " 处 AI 修改(可在「🧾 AI 修改记录」中撤回)";
+  toast("已应用 " + n + " 处 AI 修改");
+  saveRecords();
+}
+function undoActiveRecord(rec){
+  rec = rec || diffState;
+  if (!rec){ toast("没有可撤回的 AI 修改"); return; }
+  if (diffRecords[diffRecords.length - 1] !== rec){ toast("只能撤回最近一次的 AI 修改"); return; }
+  lastBasis = rec.before;
+  rec.applied = false;
+  rec.reverted = true;
+  rec.merged = null;
+  rerender();
+  $("diffDock").hidden = true;
+  activeRecordId = null;
+  diffState = null;
+  fixEntries = fixEntries.filter(f => f.cat !== "ai");
+  renderFixBar();
+  saveRecords();
+  toast("已撤回该次 AI 修改,输出恢复为修改前内容");
+}
+function openRecordView(rec){
+  activeRecordId = rec.id;
+  diffState = rec;
+  $("diffDock").hidden = false;   // 先显示再渲染,保证行高测量有效
+  renderDiffDock();
+  $("diffDock").scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+$("dockApplyBtn").addEventListener("click", applyAcceptedDiff);
+$("dockUndoBtn").addEventListener("click", () => undoActiveRecord());
+$("dockCloseBtn").addEventListener("click", () => {
+  $("diffDock").hidden = true;
+  toast("对比区已收起,可点「🧾 AI 修改记录」重新打开查看");
+});
+$("dockAllBtn").addEventListener("click", () => {
+  if (!diffState) return;
+  diffState.ops.forEach((o, i) => { if (o.type === "change") diffState.accepted.add(i); });
+  renderDiffDock();
+});
+$("dockNoneBtn").addEventListener("click", () => {
+  if (!diffState) return;
+  diffState.accepted.clear();
+  renderDiffDock();
+});
+
+/* ============ AI 修改记录弹层 ============ */
+function renderRecList(){
+  const box = $("recList");
+  if (!diffRecords.length){
+    box.innerHTML = '<div class="ritem" style="color:var(--sub);">暂无 AI 修改记录(完成一次 AI 润色后自动记录)</div>';
+    return;
+  }
+  const pad = n => String(n).padStart(2, "0");
+  box.innerHTML = diffRecords.slice().reverse().map(rec => {
+    const d = new Date(rec.time);
+    const ts = (d.getMonth() + 1) + "月" + d.getDate() + "日 " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+    const nChg = (rec.ops || []).filter(o => o.type === "change").length;
+    const st = rec.reverted ? '<span class="rstat reverted">已撤回</span>' : rec.applied ? '<span class="rstat applied">已应用</span>' : '<span class="rstat pending">对比中/未应用</span>';
+    return '<div class="ritem" data-id="' + rec.id + '">' +
+      '<span class="rtime">' + ts + "</span>" + st +
+      '<span class="rprev" title="' + esc(rec.summary || "") + '">' + esc(rec.summary || "—") + " · " + nChg + " 处修改</span>" +
+      '<span class="rbtns">' +
+      '<button class="btn small" data-act="view">查看对比</button>' +
+      '<button class="btn small" data-act="undo">撤回</button>' +
+      '<button class="btn small" data-act="del">删除</button>' +
+      "</span></div>";
+  }).join("");
+}
+$("recBtn").addEventListener("click", () => { renderRecList(); $("recMask").classList.add("show"); });
+$("recCloseBtn").addEventListener("click", () => $("recMask").classList.remove("show"));
+$("recMask").addEventListener("click", e => { if (e.target === $("recMask")) $("recMask").classList.remove("show"); });
+$("recClearBtn").addEventListener("click", () => {
+  clearAIRecords();
+  renderRecList();
+  toast("AI 修改记录已清空");
+});
+$("recList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-act]");
+  const item = e.target.closest(".ritem");
+  if (!btn || !item) return;
+  const rec = diffRecords.find(r => r.id === item.dataset.id);
+  if (!rec) return;
+  if (btn.dataset.act === "view"){
+    $("recMask").classList.remove("show");
+    openRecordView(rec);
+  } else if (btn.dataset.act === "undo"){
+    if (diffRecords[diffRecords.length - 1] !== rec){ toast("只能撤回最近一次的 AI 修改"); return; }
+    undoActiveRecord(rec);
+    $("recMask").classList.remove("show");
+  } else if (btn.dataset.act === "del"){
+    const idx = diffRecords.indexOf(rec);
+    diffRecords.splice(idx, 1);
+    if (activeRecordId === rec.id){ activeRecordId = null; diffState = null; $("diffDock").hidden = true; }
+    if (!diffRecords.length) $("recBtn").disabled = true;
+    saveRecords();
+    renderRecList();
+    toast("已删除该条记录");
+  }
+});
+
+/* ============ 历史公告风格样本导入 ============ */
+function updateStyleInfo(){
+  const n = $("aiStyleRef").value.length;
+  $("aiStyleInfo").textContent = "已存 " + n + " 字 / 补充参考上限 4000 字(与参考库语料互不影响)";
+}
+function extractSamples(text, count, eachMax){
+  const cleaned = text.replace(/\r\n?/g, "\n");
+  let arr = [];
+  const re = /^(\d{4})\s*更新公告\s*$/gm;
+  let m, last = -1;
+  while ((m = re.exec(cleaned))){
+    if (last >= 0) arr.push(cleaned.slice(last, m.index).trim());
+    last = m.index;
+  }
+  if (last >= 0) arr.push(cleaned.slice(last).trim());
+  if (!arr.length) arr = [cleaned];
+  let out = arr.slice(0, count).map(s => "【历史公告样本】\n" + s.slice(0, eachMax)).join("\n\n");
+  if (out.length > 4000) out = out.slice(0, 4000);
+  return out;
+}
+$("aiStyleRef").addEventListener("input", updateStyleInfo);
+$("aiStyleImportBtn").addEventListener("click", () => $("aiStyleFile").click());
+$("aiStyleFile").addEventListener("change", async () => {
+  const f = $("aiStyleFile").files && $("aiStyleFile").files[0];
+  $("aiStyleFile").value = "";
+  if (!f) return;
+  try{
+    const text = await readUploadedFile(f);
+    const samples = extractSamples(text, 3, 1200);
+    $("aiStyleRef").value = samples;
+    updateStyleInfo();
+    toast("已提取 " + samples.length + " 字补充参考,点击「保存」后生效");
+  }catch(err){
+    console.error(err);
+    toast("导入失败:" + err.message);
+  }
+});
+
+/* ============ 参考库弹层交互 ============ */
+let linkedFileInfo = null;
+let libFileHintShown = false;
+function updateLibUI(){
+  const custom = getCustomCorpus();
+  const sub = $("libMask").querySelector(".sub");
+  const onlineN = onlineCorpusCache ? onlineCorpusCache.text.length : 0;
+  $("libOnlineInfo").textContent = onlineN ? "已读取在线存档 " + onlineN + " 字" : (ONLINE_CORPUS_URL ? "未读取到在线存档(检查后台配置与文件名)" : "未开启在线存档");
+  if (linkedFileInfo && linkedFileInfo.ok){
+    $("libFileInfo").textContent = "已关联:「" + linkedFileInfo.name + "」 " + linkedFileInfo.size + " 字(每次润色实时读取)";
+    if (sub) sub.textContent = "当前生效:本地文件「" + linkedFileInfo.name + "」。优先级:在线存档 > 本地关联文件 > 自定义语料 > 内置风格要点";
+  } else if (linkedFileInfo && linkedFileInfo.error){
+    if (linkedFileInfo.size > 0){
+      $("libFileInfo").textContent = "已关联:「" + linkedFileInfo.name + "」 授权已失效——当前自动使用上次关联的内容缓存(" + linkedFileInfo.size + " 字);点「重新授权」或重新关联即可恢复实时读取";
+    } else {
+      $("libFileInfo").textContent = "已关联:「" + linkedFileInfo.name + "」 读取失败(" + linkedFileInfo.error + "),请重新关联授权";
+    }
+    if (sub) sub.textContent = "关联文件授权失效,当前使用在线存档/内容缓存/自定义语料,不影响润色";
+  } else {
+    $("libFileInfo").textContent = "未关联";
+    if (sub) sub.textContent = "当前生效:" + (onlineN ? "在线存档(" + onlineN + " 字)" : custom.trim() ? "自定义语料" : "内置风格要点(未配置语料)") + "。优先级:在线存档 > 本地关联文件 > 自定义语料 > 内置风格要点";
+  }
+  $("libCount").textContent = countChars(custom) + " 字";
+}
+async function refreshLinkedFileInfo(silent){
+  const r = await readLinkedFile();
+  linkedFileInfo = r ? { name: r.name, size: r.text.length, ok: !r.error, error: r.error } : null;
+  if (linkedFileInfo && linkedFileInfo.ok) styleWarnShown = false;
+  updateLibUI();
+  if (!silent){
+    if (linkedFileInfo && linkedFileInfo.ok) toast("已读取「" + linkedFileInfo.name + "」 " + linkedFileInfo.size + " 字");
+    else toast("未读取到关联文件");
+  }
+  return linkedFileInfo;
+}
+async function refreshOnlineInfo(silent){
+  const t = await readOnlineCorpus();
+  const n = t ? t.length : 0;
+  $("libOnlineInfo").textContent = n ? "已读取在线存档 " + n + " 字" : "未读取到在线存档(检查后台配置与文件名)";
+  if (!silent) toast(n ? "在线存档已读取(" + n + " 字)" : "未读取到在线存档");
+  return n;
+}
+$("libOnlineReReadBtn").addEventListener("click", () => refreshOnlineInfo(false));
+function openLibModal(){
+  $("libCustom").value = getCustomCorpus();
+  $("libMask").classList.add("show");
+  document.querySelectorAll('input[name="styleMode"]').forEach(r => { r.checked = (r.value === getStyleMode()); });
+  refreshLinkedFileInfo(true);
+  refreshOnlineInfo(true);
+  if (location.protocol === "file:" && hasFSA() && !libFileHintShown){
+    libFileHintShown = true;
+    toast("提示:file:// 双击打开时,关闭页面后关联授权会失效(浏览器安全策略);工具会自动使用内容缓存,点「重新授权」即可恢复实时读取");
+  }
+}
+$("libBtn").addEventListener("click", openLibModal);
+$("libBtn2").addEventListener("click", openLibModal);
+$("libCloseBtn").addEventListener("click", () => $("libMask").classList.remove("show"));
+$("libMask").addEventListener("click", e => { if (e.target === $("libMask")) $("libMask").classList.remove("show"); });
+$("libLinkBtn").addEventListener("click", async () => {
+  if (!hasFSA()){ toast("当前浏览器不支持本地文件关联,请使用 Chrome/Edge,或改用下方自定义语料"); return; }
+  try{
+    const [fh] = await window.showOpenFilePicker({
+      multiple:false,
+      types:[{ description:"历史公告参考(txt/md/docx)", accept:{ "text/plain":[".txt",".md",".docx"] } }]
+    });
+    await idbSet("fileHandle", fh);
+    await refreshLinkedFileInfo(false);
+    toast("已关联本地文件,润色时将实时读取最新内容");
+  }catch(err){
+    if (err && err.name !== "AbortError") toast("关联失败:" + err.message);
+  }
+});
+$("libUnlinkBtn").addEventListener("click", async () => {
+  await idbDel("fileHandle");
+  try{ localStorage.removeItem(LINK_CACHE_KEY); }catch(e){}
+  linkedFileInfo = null;
+  updateLibUI();
+  toast("已取消关联,恢复使用自定义语料或内置风格要点");
+});
+$("libReReadBtn").addEventListener("click", async () => {
+  // 一键重新授权:向浏览器重新申请读取权限,成功后立即实时读取
+  const fh = await getLinkedFileHandle();
+  if (fh && typeof fh.requestPermission === "function"){
+    try{
+      const p = await fh.requestPermission({ mode: "read" });
+      if (p === "granted") toast("授权成功,正在实时读取…");
+      else toast("未获得授权,继续使用内容缓存(可尝试「选择并关联文件」重新关联)");
+    }catch(e){
+      toast("重新授权失败:" + (e && e.message || e) + "(可尝试「选择并关联文件」重新关联)");
+    }
+  }
+  await refreshLinkedFileInfo(false);
+});
+$("libImportBtn").addEventListener("click", () => $("libImportFile").click());
+$("libImportFile").addEventListener("change", async () => {
+  const f = $("libImportFile").files && $("libImportFile").files[0];
+  $("libImportFile").value = "";
+  if (!f) return;
+  try{
+    let text = await readUploadedFile(f);
+    if (text.length > 400000){ text = text.slice(0, 400000); toast("语料超过 40 万字,已截取前 40 万字"); }
+    $("libCustom").value = text;
+    $("libCount").textContent = countChars(text) + " 字";
+    toast("已导入「" + f.name + "」 " + countChars(text) + " 字,点「保存语料」生效");
+  }catch(err){
+    console.error(err);
+    toast("导入失败:" + err.message);
+  }
+});
+$("libCustom").addEventListener("input", () => { $("libCount").textContent = countChars($("libCustom").value) + " 字"; });
+$("libExportBtn").addEventListener("click", async () => {
+  let text = $("libCustom").value;
+  if (!text.trim()){
+    const r = await readLinkedFile();
+    if (r && r.text.trim()) text = r.text;
+  }
+  if (!text.trim()){ toast("暂无语料可导出"); return; }
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  download(new Blob([text], { type:"text/plain;charset=utf-8" }), "历史公告参考_" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + ".txt");
+  toast("语料已导出为 txt");
+});
+$("libClearBtn").addEventListener("click", () => {
+  $("libCustom").value = "";
+  $("libCount").textContent = "0 字";
+  toast("已清空,点「保存语料」后仅使用内置风格要点");
+});
+$("libSaveBtn").addEventListener("click", () => {
+  const t = $("libCustom").value;
+  try{ localStorage.setItem("ggpa_custom_corpus", t); }catch(e){ toast("保存失败:浏览器存储不可用"); return; }
+  const modeEl = document.querySelector('input[name="styleMode"]:checked');
+  try{ localStorage.setItem("ggpa_style_mode", modeEl ? modeEl.value : "smart"); }catch(e){}
+  $("libMask").classList.remove("show");
+  toast(t.trim() ? "自定义语料已保存(" + countChars(t) + " 字)" : "已清空自定义语料");
+});
+
+/* ============ 确认弹层与参考语料检查 ============ */
+let confirmResolve = null;
+function confirmDialog(msg, okText, altText){
+  return new Promise(res => {
+    confirmResolve = res;
+    $("confirmMsg").innerHTML = msg;
+    $("confirmOKBtn").textContent = okText || "继续";
+    $("confirmAltBtn").hidden = !altText;
+    if (altText) $("confirmAltBtn").textContent = altText;
+    $("confirmMask").classList.add("show");
+  });
+}
+function closeConfirm(val){
+  $("confirmMask").classList.remove("show");
+  if (confirmResolve){ confirmResolve(val); confirmResolve = null; }
+}
+$("confirmOKBtn").addEventListener("click", () => closeConfirm(true));
+$("confirmAltBtn").addEventListener("click", () => closeConfirm("config"));
+$("confirmCancelBtn").addEventListener("click", () => closeConfirm(false));
+$("confirmMask").addEventListener("click", e => { if (e.target === $("confirmMask")) closeConfirm(false); });
+async function hasStyleCorpus(){
+  const online = await readOnlineCorpus();
+  if (online && online.trim()) return true;
+  const linked = await readLinkedFile();
+  if (linked && linked.text.trim()) return true;
+  if (getCustomCorpus().trim()) return true;
+  return false;
+}
+const STYLE_CORPUS_CONFIRM = "<b>历史公告参考语料未配置</b><br>当前参考库中未关联本地文件,也没有自定义语料,AI 将仅按内置风格要点润色,与历史公告的贴合度可能不足。<br>建议先到「📚 参考库」导入或关联历史公告,再继续润色。";
+
+/* ============ 深色模式(默认浅色,可手动切换并记忆) ============ */
+function applyDark(){
+  let dark = false;
+  try{ dark = localStorage.getItem("ggpa_dark") === "1"; }catch(e){}
+  document.body.classList.toggle("dark", dark);
+  $("darkBtn").textContent = dark ? "☀️ 浅色" : "🌙 深色";
+}
+$("darkBtn").addEventListener("click", () => {
+  const dark = !document.body.classList.contains("dark");
+  document.body.classList.toggle("dark", dark);
+  try{ localStorage.setItem("ggpa_dark", dark ? "1" : "0"); }catch(e){}
+  $("darkBtn").textContent = dark ? "☀️ 浅色" : "🌙 深色";
+});
+
+/* ============ 快捷键 Ctrl+Enter 一键优化 ============ */
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter"
+    && !$("mask").classList.contains("show")
+    && !$("historyMask").classList.contains("show")
+    && !$("aiMask").classList.contains("show")
+    && !$("libMask").classList.contains("show")
+    && !$("confirmMask").classList.contains("show")
+    && !$("recMask").classList.contains("show")){
+    e.preventDefault();
+    optimize();
+  }
+});
+
+/* ============ 输入框占位提示随类型变化 ============ */
+function updatePlaceholder(){
+  if (currentKind === "mail"){
+    inputEl.placeholder = "在此粘贴邮件正文…\n可先勾选上方「补偿邮件」模板自动补全开头,再粘贴正文";
+  } else {
+    const pn = getProduct().name;
+    inputEl.placeholder = "在此粘贴" + pn + "公告正文…\n支持直接粘贴旧公告(含标签,自动剥离重新排版)\n可先勾选上方模板自动补全开头语";
+  }
+}
+
+/* ============ 工具坞跨页指令(对话调用工具) ============ */
+(function handleDockIntent(){
+  let intent = null;
+  try{ intent = JSON.parse(localStorage.getItem("ggpa_dock_intent") || "null"); }catch(e){}
+  if (!intent) return;
+  try{ localStorage.removeItem("ggpa_dock_intent"); }catch(e){}
+  if (intent.product === "zx" || intent.product === "qx"){
+    currentProduct = intent.product;
+    prodSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.product === currentProduct));
+    applyTheme();
+    renderLegend();
+    updatePlaceholder();
+  }
+  if (intent.kind === "mail" || intent.kind === "announcement"){
+    currentKind = intent.kind;
+    kindSeg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.kind === currentKind));
+    $("chipColor").classList.toggle("disabled", currentKind === "mail");
+    refreshTplChips();
+    updatePlaceholder();
+  }
+  if (intent.tpl) applyTemplateChip(intent.tpl);
+})();
+
+/* 初始化 */
+(function init(){
+  // 旧版 DeepSeek 配置迁移:deepseek-chat 已下线,自动升级为 deepseek-flash
+  try{
+    const cfg = getAICfg();
+    if (cfg.provider === "deepseek" && cfg.model === "deepseek-chat"){
+      cfg.model = "deepseek-flash";
+      localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg));
+    }
+  }catch(e){}
+  const c = getChips();
+  // 后台共享配置模式:隐藏 AI 配置入口与开关,成员直接使用管理员配置
+  if (SHARED_AI.enabled && SHARED_AI.hideConfig){
+    $("chipAI").style.display = "none";
+    $("aiSettingsBtn").style.display = "none";
+  }
+  $("chipPlain").classList.toggle("on", !!c.plain);
+  $("chipColor").classList.toggle("on", c.color === true);   // 默认均关闭,勾选即开启
+  $("chipSpace").classList.toggle("on", c.space === true);
+  $("chipAI").classList.toggle("on", !!getAICfg().enabled);
+  updateAIPolishBtn();
+  if (loadRecords()){
+    $("recBtn").disabled = false;
+  }
+  refreshTplChips();
+  applyTheme();
+  applyDark();
+  renderLegend();
+  updatePlaceholder();
+})();
+})();
+</script>
+</body>
+</html>
