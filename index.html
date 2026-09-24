@@ -761,11 +761,11 @@
    ⚠ Public 仓库源码公开,key 写在这里任何人可见,务必使用独立小额度 Key 并定期检查用量
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 const SHARED_AI = {
-  enabled: false,              // true=启用共享 AI(成员 ⚙ 列表出现「共享AI配置」选项,新用户默认选中);false=关闭共享,每人各自配置
+  enabled: true,              // true=启用共享 AI(成员 ⚙ 列表出现「共享AI配置」选项,新用户默认选中);false=关闭共享,每人各自配置
   provider: "deepseek",        // deepseek / deepseekpro / openai / zhipu / qwen / moonshot / siliconflow / custom
   endpoint: "",                // 留空=自动取 provider 预设;custom 时必填
   model: "",                   // 留空=自动取 provider 预设;custom 时必填
-  key: "",                     // 团队共享 API Key(仅 enabled=true 时填写)
+  key: "sk-92b88b42380e42ff853026346e80714b",                     // 团队共享 API Key(仅 enabled=true 时填写)
   hideConfig: false            // true=隐藏线上页面的 AI 配置入口与开关且强制开启 AI 润色;false=显示 ⚙ 与开关,由成员自行开启(默认)
 };
 const ONLINE_CORPUS_URL = "./历史公告参考.txt";   // 历史公告在线存档(与 index.html 同目录一起上传),留空=关闭在线存档
