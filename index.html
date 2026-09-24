@@ -749,15 +749,24 @@
 (function(){
 "use strict";
 
-/* ═══════════════ 后台配置区(部署上线时由管理员在此维护,修改后重新上传覆盖即可) ═══════════════ */
+/* ═══════════════ 后台配置区(部署上线时由管理员在此维护,修改后重新上传覆盖即可) ═══════════════
+   共享 AI 配置用法(管理员在 GitHub 改这里,全员可用):
+   ① 把 enabled 改为 true
+   ② key 填入团队共享 Key(选 deepseek 时 endpoint/model 留空即可)
+   ③ 效果:成员 ⚙ 的服务商列表顶部出现「🤝 共享AI配置」选项,首次使用自动默认选中它;
+      AI 润色开关默认关闭,成员点开后即可用共享配置(动态读取,你更新后成员刷新即生效);
+      成员也可在 ⚙ 里改选其他服务商,填自己的 Key(个人配置优先,互不覆盖)
+   ④ hideConfig 改 true = 隐藏 ⚙ 与 AI 开关且 AI 润色强制开启(全员零配置;注意会跳过成员手动开启步骤,润色耗时,慎用);
+      hideConfig 保持 false = 成员自行决定何时开启 AI 润色(默认,推荐)
+   ⚠ Public 仓库源码公开,key 写在这里任何人可见,务必使用独立小额度 Key 并定期检查用量
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
 const SHARED_AI = {
-  enabled: false,              // true=团队共享同一个 Key(填下方 key,成员无需配置,但 Key 会公开在源码里);
-                               // false=每人各自在 ⚙ 里配置自己的 Key(推荐:Key 存各自浏览器,源码不含 Key,Public 仓库也安全)
+  enabled: false,              // true=启用共享 AI(成员 ⚙ 列表出现「共享AI配置」选项,新用户默认选中);false=关闭共享,每人各自配置
   provider: "deepseek",        // deepseek / deepseekpro / openai / zhipu / qwen / moonshot / siliconflow / custom
   endpoint: "",                // 留空=自动取 provider 预设;custom 时必填
   model: "",                   // 留空=自动取 provider 预设;custom 时必填
-  key: "",                     // 仅 enabled=true 时填写(团队共享 Key;公开仓库中任何人可见,务必用小额度独立 Key)
-  hideConfig: false            // true=隐藏线上页面的 AI 配置入口(成员不能自己配);false=显示 ⚙,成员可各自配置
+  key: "",                     // 团队共享 API Key(仅 enabled=true 时填写)
+  hideConfig: false            // true=隐藏线上页面的 AI 配置入口与开关且强制开启 AI 润色;false=显示 ⚙ 与开关,由成员自行开启(默认)
 };
 const ONLINE_CORPUS_URL = "./历史公告参考.txt";   // 历史公告在线存档(与 index.html 同目录一起上传),留空=关闭在线存档
 /* ══════════════════════════════════════════════════════════════════════════════════════════════ */
@@ -847,21 +856,24 @@ function saveProduct(p){
   try{ localStorage.setItem("ggpa_prod_" + currentProduct, JSON.stringify(p)); }catch(e){}
 }
 function getAICfg(){
-  let cfg = { enabled:false, provider:"deepseek", endpoint:"", model:"", key:"" };
+  let cfg = { enabled:false, provider:"", endpoint:"", model:"", key:"" };
   try{ const s = JSON.parse(localStorage.getItem("ggpa_ai_cfg") || "null"); if (s) cfg = Object.assign(cfg, s); }catch(e){}
-  // 后台共享配置:管理员在源码「后台配置区」维护,全体成员自动生效
-  if (SHARED_AI.enabled){
+  // 首次使用(从未配置过):后台配了共享 AI 则默认使用共享配置,否则默认 DeepSeek
+  if (!cfg.provider){
+    cfg.provider = (SHARED_AI.enabled && SHARED_AI.key) ? "shared" : "deepseek";
+  }
+  // 共享 AI 配置:动态读取后台配置区,不固化到本地(管理员更新后成员刷新即生效)
+  if (cfg.provider === "shared"){
     const p = AI_PRESETS.find(x => x.id === SHARED_AI.provider);
-    cfg.provider = SHARED_AI.provider;
     cfg.endpoint = SHARED_AI.endpoint || (p ? p.endpoint : "");
     cfg.model = SHARED_AI.model || (p ? p.model : "");
-    if (SHARED_AI.key) cfg.key = SHARED_AI.key;
-    if (SHARED_AI.hideConfig) cfg.enabled = true;
+    cfg.key = SHARED_AI.key || "";
   }
+  if (SHARED_AI.hideConfig) cfg.enabled = true;   // 隐藏配置入口时,AI 润色强制开启
   return cfg;
 }
 function getChips(){
-  let c = { plain:false, color:false, space:false };
+  let c = { plain:false, color:false, indent:false };
   try{ const s = JSON.parse(localStorage.getItem("ggpa_chips_v2") || "null"); if (s) c = Object.assign(c, s); }catch(e){}
   return c;
 }
@@ -1790,12 +1802,9 @@ async function optimize(){
   const prod = getProduct();
   const cfg = getAICfg();
   if (cfg.enabled && (!cfg.endpoint || !cfg.key)){
-    if (SHARED_AI.enabled && SHARED_AI.hideConfig){
-      cfg.enabled = false;   // 共享 Key 未配置时,自动降级为纯本地排版,不阻断使用
-    } else {
-      toast("AI 润色已开启但未配置接口,请点 ⚙ 完成配置");
-      return;
-    }
+    // 配置已失效(如共享AI配置被管理员移除/未配置):自动降级为纯本地排版,不阻断使用
+    cfg.enabled = false;
+    toast("AI 配置已失效(请检查 ⚙ 配置或共享AI配置),本轮已自动跳过 AI 润色");
   }
   const c = chips();
   const optBtn = $("optBtn");
@@ -2250,16 +2259,22 @@ $("saveBtn").addEventListener("click", () => {
 
 /* ============ AI 润色开关与配置 ============ */
 $("chipAI").addEventListener("click", () => {
+  const willOn = !$("chipAI").classList.contains("on");
+  if (willOn){
+    // 开启前校验:当前配置没有接口/Key 时不允许开启,提示先配置
+    const chk = getAICfg();
+    if (!chk.endpoint || !chk.key){
+      toast("请先在 ⚙ 配置 AI(选择服务商并填写 Key,或选择「共享AI配置」),配置后才能开启 AI 润色");
+      return;
+    }
+  }
   $("chipAI").classList.toggle("on");
   const cfg = getAICfg();
-  cfg.enabled = $("chipAI").classList.contains("on");
+  cfg.enabled = willOn;
+  if (cfg.provider === "shared"){ cfg.endpoint = ""; cfg.model = ""; cfg.key = ""; }   // 共享配置动态读取,不固化
   try{ localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg)); }catch(e){}
   updateAIPolishBtn();
-  if (cfg.enabled){
-    toast(cfg.endpoint && cfg.key ? "已开启 AI 润色" : "已开启 AI 润色,请点 ⚙ 配置接口与 Key");
-  } else {
-    toast("已关闭 AI 润色");
-  }
+  toast(willOn ? "已开启 AI 润色" : "已关闭 AI 润色");
 });
 /* ============ AI 服务商预设(下拉选择,自动填好接口与模型) ============ */
 const AI_PRESETS = [
@@ -2273,6 +2288,18 @@ const AI_PRESETS = [
   { id:"custom", name:"自定义(手动填写接口地址与模型)", endpoint:"", model:"" }
 ];
 function applyAIProvider(id, cfg){
+  if (id === "shared"){
+    // 共享AI配置:接口/模型/Key 均来自后台配置区,只读展示
+    $("aiEndpoint").readOnly = true;
+    $("aiModel").readOnly = true;
+    $("aiKey").readOnly = true;
+    const p = AI_PRESETS.find(x => x.id === SHARED_AI.provider);
+    $("aiEndpoint").value = SHARED_AI.endpoint || (p ? p.endpoint : "");
+    $("aiModel").value = SHARED_AI.model || (p ? p.model : "");
+    $("aiKey").value = "(共享Key已由管理员配置,无需填写)";
+    return;
+  }
+  $("aiKey").readOnly = false;
   const p = AI_PRESETS.find(x => x.id === id) || AI_PRESETS[AI_PRESETS.length - 1];
   const isCustom = p.id === "custom";
   $("aiEndpoint").readOnly = !isCustom;
@@ -2287,8 +2314,16 @@ function applyAIProvider(id, cfg){
 }
 function fillAIProviderSelect(cfg){
   const sel = $("aiProvider");
-  sel.innerHTML = AI_PRESETS.map(p => '<option value="' + p.id + '">' + p.name + "</option>").join("");
-  const cur = (cfg.provider && AI_PRESETS.some(p => p.id === cfg.provider)) ? cfg.provider : (cfg.endpoint ? "custom" : "deepseek");
+  const opts = AI_PRESETS.slice();
+  // 后台配了共享 AI 时,列表顶部出现「共享AI配置」选项
+  if (SHARED_AI.enabled && SHARED_AI.key){
+    opts.unshift({ id:"shared", name:"🤝 共享AI配置(管理员统一配置,无需自己填Key)", endpoint:"", model:"" });
+  }
+  sel.innerHTML = opts.map(p => '<option value="' + p.id + '">' + p.name + "</option>").join("");
+  const hasShared = SHARED_AI.enabled && SHARED_AI.key;
+  const cur = (cfg.provider && opts.some(p => p.id === cfg.provider))
+    ? cfg.provider
+    : (cfg.endpoint ? "custom" : (hasShared ? "shared" : "deepseek"));
   sel.value = cur;
   applyAIProvider(cur, cfg);
 }
@@ -2296,17 +2331,25 @@ $("aiProvider").addEventListener("change", () => applyAIProvider($("aiProvider")
 
 $("aiSettingsBtn").addEventListener("click", () => {
   const cfg = getAICfg();
-  $("aiKey").value = cfg.key || "";
   fillAIProviderSelect(cfg);
+  if (cfg.provider !== "shared") $("aiKey").value = cfg.key || "";   // 共享模式下 Key 框显示占位文案
   $("aiMask").classList.add("show");
 });
 $("aiCancelBtn").addEventListener("click", () => $("aiMask").classList.remove("show"));
 $("aiMask").addEventListener("click", e => { if (e.target === $("aiMask")) $("aiMask").classList.remove("show"); });
 $("aiSaveBtn").addEventListener("click", () => {
   const cfg = getAICfg();
+  cfg.provider = $("aiProvider").value;
+  if (cfg.provider === "shared"){
+    cfg.endpoint = ""; cfg.model = ""; cfg.key = "";   // 共享配置动态读取,不固化到本地
+    try{ localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg)); }catch(e){}
+    updateAIPolishBtn();
+    $("aiMask").classList.remove("show");
+    toast("已切换为「共享AI配置」,由管理员统一维护");
+    return;
+  }
   const rawEp = $("aiEndpoint").value.trim();
   const normEp = normalizeEndpoint(rawEp);
-  cfg.provider = $("aiProvider").value;
   cfg.endpoint = normEp;
   cfg.model = $("aiModel").value.trim();
   cfg.key = $("aiKey").value.trim();
@@ -3258,6 +3301,11 @@ function updatePlaceholder(){
     if (cfg.provider === "deepseek" && cfg.model === "deepseek-chat"){
       cfg.model = "deepseek-flash";
       localStorage.setItem("ggpa_ai_cfg", JSON.stringify(cfg));
+    }
+    // 共享 AI 配置变化检测:玩家之前选了「共享AI配置」,但后台已无共享配置(未配/被移除),提示重新选择
+    const raw = JSON.parse(localStorage.getItem("ggpa_ai_cfg") || "null");
+    if (raw && raw.provider === "shared" && !(SHARED_AI.enabled && SHARED_AI.key)){
+      setTimeout(() => toast("共享AI配置已变化(后台未配置共享AI),请打开 ⚙ 重新选择 AI 服务商"), 800);
     }
   }catch(e){}
   const c = getChips();
